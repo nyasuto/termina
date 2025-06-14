@@ -1,4 +1,4 @@
-# WhisperTerm - macOS Voice Input Application Dependencies
+# Termina - macOS Voice Input Application Dependencies
 
 # Menu bar UI for macOS
 rumps>=0.4.0
