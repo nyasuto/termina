@@ -111,36 +111,128 @@ class OpenAIProvider(SpeechProvider):
 
 
 class WhisperCppProvider(SpeechProvider):
-    """Local whisper.cpp provider (placeholder for future implementation)"""
+    """Local openai-whisper provider"""
     
     def __init__(self):
-        # TODO: Initialize whisper.cpp bindings
-        self._available = False
+        self._model = None
+        self._model_name = None
+        self._available = self._check_availability()
+        
+    def _check_availability(self) -> bool:
+        """Check if local whisper is available"""
+        try:
+            # Check if openai-whisper is installed
+            import whisper
+            
+            print("openai-whisper library available")
+            return True
+                
+        except ImportError:
+            print("openai-whisper not installed")
+            return False
+        except Exception as e:
+            print(f"Error checking openai-whisper availability: {e}")
+            return False
+    
+    def _load_model(self, model_name: str = None) -> bool:
+        """Load whisper model"""
+        try:
+            import whisper
+            
+            # Determine which model to use
+            if model_name:
+                target_model = model_name
+            else:
+                target_model = "base"  # Default to base model for good balance
+            
+            # Load the model if not already loaded
+            if self._model_name != target_model:
+                print(f"Loading openai-whisper model: {target_model}")
+                self._model = whisper.load_model(target_model)
+                self._model_name = target_model
+                print(f"Model {target_model} loaded successfully")
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error loading openai-whisper model: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
         
     def transcribe(self, audio_path: str) -> Optional[str]:
-        """Transcribe audio using local whisper.cpp"""
+        """Transcribe audio using local openai-whisper"""
         if not self.is_available():
-            print("whisper.cpp provider not available")
+            print("openai-whisper provider not available")
             return None
             
         try:
-            print(f"Starting whisper.cpp transcription for file: {audio_path}")
-            # TODO: Implement whisper.cpp transcription
-            print("whisper.cpp transcription not yet implemented")
-            return None
+            print(f"Starting openai-whisper transcription for file: {audio_path}")
+            
+            # Check if file exists
+            if not os.path.exists(audio_path):
+                print(f"Error: Audio file does not exist: {audio_path}")
+                return None
+            
+            # Load model if needed
+            if not self._load_model():
+                print("Failed to load openai-whisper model")
+                return None
+            
+            # Load audio manually to avoid ffmpeg dependency issues
+            import numpy as np
+            import scipy.io.wavfile as wavfile
+            
+            print(f"Loading audio file manually: {audio_path}")
+            try:
+                sample_rate, audio_data = wavfile.read(audio_path)
+                print(f"Audio loaded: sample_rate={sample_rate}, shape={audio_data.shape}")
+                
+                # Convert to float32 and normalize
+                if audio_data.dtype == np.int16:
+                    audio_data = audio_data.astype(np.float32) / 32768.0
+                elif audio_data.dtype == np.int32:
+                    audio_data = audio_data.astype(np.float32) / 2147483648.0
+                
+                # Ensure mono
+                if len(audio_data.shape) > 1:
+                    audio_data = np.mean(audio_data, axis=1)
+                
+                print(f"Transcribing with model: {self._model_name}")
+                result = self._model.transcribe(audio_data, language='ja')
+                
+            except Exception as audio_error:
+                print(f"Manual audio loading failed: {audio_error}")
+                print("Falling back to whisper's built-in audio loading...")
+                result = self._model.transcribe(audio_path, language='ja')
+            
+            # Extract text from result
+            if isinstance(result, dict) and 'text' in result:
+                text = result['text'].strip()
+            elif hasattr(result, 'text'):
+                text = result.text.strip()
+            elif isinstance(result, str):
+                text = result.strip()
+            else:
+                print(f"Unexpected result format: {type(result)}")
+                return None
+            
+            print(f"openai-whisper transcription successful: '{text}'")
+            return text if text else None
                 
         except Exception as e:
-            print(f"whisper.cpp transcription error: {e}")
+            print(f"openai-whisper transcription error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def is_available(self) -> bool:
         """Check if whisper.cpp is available"""
-        # TODO: Check if whisper.cpp bindings are installed and models are available
         return self._available
     
     @property
     def name(self) -> str:
-        return "Local Whisper (whisper.cpp)"
+        return f"Local Whisper ({self._model_name or 'openai-whisper'})"
     
     @property
     def requires_internet(self) -> bool:

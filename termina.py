@@ -42,8 +42,12 @@ class TerminaApp(rumps.App):
         
         # Menu items
         self.start_item = rumps.MenuItem("Start Recording", callback=self.toggle_recording)
+        self.provider_menu = self._create_provider_menu()
+        
         self.menu = [
             self.start_item,
+            rumps.separator,
+            self.provider_menu,
             rumps.separator,
             rumps.MenuItem("Hotkey: ⌘+H", callback=None),
             rumps.separator,
@@ -258,6 +262,82 @@ class TerminaApp(rumps.App):
             print("Stopping recording...")
             self.stop_recording()
 
+    def _create_provider_menu(self):
+        """Create speech provider selection menu"""
+        from speech_providers import SpeechProviderFactory
+        
+        provider_menu = rumps.MenuItem("Speech Provider")
+        
+        # Get available providers
+        available_providers = SpeechProviderFactory.get_available_providers()
+        
+        if not available_providers:
+            provider_menu.add(rumps.MenuItem("No providers available", callback=None))
+            return provider_menu
+        
+        # Add provider options
+        current_provider_name = self.speech_provider.name if self.speech_provider else "None"
+        
+        for provider in available_providers:
+            is_current = provider.name == current_provider_name
+            menu_title = f"● {provider.name}" if is_current else f"○ {provider.name}"
+            
+            # Add internet requirement indicator
+            if provider.requires_internet:
+                menu_title += " 🌐"
+            else:
+                menu_title += " 💻"
+            
+            item = rumps.MenuItem(menu_title, callback=lambda sender, p=provider: self._switch_provider(p))
+            provider_menu.add(item)
+        
+        # Add separator and model management for whisper.cpp
+        if any(not p.requires_internet for p in available_providers):
+            provider_menu.add(rumps.separator)
+            provider_menu.add(rumps.MenuItem("Manage Local Models...", callback=self._manage_models))
+        
+        return provider_menu
+    
+    def _switch_provider(self, new_provider):
+        """Switch to a different speech provider"""
+        if self.is_recording:
+            rumps.notification("Termina", "Cannot Switch", "Please stop recording before switching providers")
+            return
+        
+        old_name = self.speech_provider.name if self.speech_provider else "None"
+        self.speech_provider = new_provider
+        
+        # Update menu to reflect new selection
+        self.provider_menu = self._create_provider_menu()
+        self.menu = [
+            self.start_item,
+            rumps.separator,
+            self.provider_menu,
+            rumps.separator,
+            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.separator,
+            rumps.MenuItem("Quit", callback=rumps.quit_application)
+        ]
+        
+        rumps.notification("Termina", "Provider Switched", f"Switched from {old_name} to {new_provider.name}")
+        print(f"Switched speech provider from {old_name} to {new_provider.name}")
+    
+    def _manage_models(self, _):
+        """Show model management dialog"""
+        # Build info message
+        info_lines = ["Local Whisper Models:\n"]
+        
+        # Available openai-whisper models
+        models = ["tiny", "base", "small", "medium", "large"]
+        for model_name in models:
+            info_lines.append(f"{model_name}: Auto-downloaded when first used")
+        
+        info_lines.append("\nModels are automatically downloaded and cached")
+        info_lines.append("when first selected for use.\n")
+        info_lines.append("Cache location: ~/.cache/whisper/")
+        
+        rumps.alert("Model Management", "\n".join(info_lines))
+
 
 def main():
     # Load environment variables from .env.local
@@ -273,7 +353,7 @@ def main():
                        "No speech recognition providers available.\n\n"
                        "Please configure:\n"
                        "• OpenAI API: Set OPENAI_API_KEY in .env.local\n"
-                       "• Local Whisper: Install whisper.cpp (coming soon)")
+                       "• Local Whisper: Run 'pip install openai-whisper'")
             return
     
     # Start the application
