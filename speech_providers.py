@@ -234,9 +234,9 @@ class WhisperCppProvider(SpeechProvider):
                 print(f"Preprocessed audio: length={len(audio_data)}, sample_rate={sample_rate}")
                 print(f"Audio stats: min={np.min(audio_data):.4f}, max={np.max(audio_data):.4f}, mean={np.mean(audio_data):.4f}")
                 
-                # Ensure audio array has positive strides for PyTorch compatibility
-                audio_data = np.ascontiguousarray(audio_data.copy())
-                print("Audio array made contiguous for PyTorch compatibility")
+                # Ensure audio array has positive strides and correct dtype for PyTorch compatibility
+                audio_data = np.ascontiguousarray(audio_data.copy()).astype(np.float32)
+                print(f"Audio array made contiguous for PyTorch compatibility: dtype={audio_data.dtype}")
                 
                 print(f"Transcribing with model: {self._model_name}")
                 # Optimize transcription settings for best accuracy
