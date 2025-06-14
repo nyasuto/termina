@@ -2,7 +2,7 @@
 """
 Termina - macOS Menu Bar Voice Input Application
 Records audio, transcribes with OpenAI Whisper, and pastes text to active applications
-Supports manual recording controls and global hotkeys (Cmd+H)
+Supports manual recording controls and global hotkeys (Cmd+Shift+V)
 """
 
 import os
@@ -279,12 +279,12 @@ class TerminaApp(rumps.App):
         """Setup global hotkeys"""
         try:
             print("Setting up global hotkeys...")
-            # Define hotkey combination: Cmd+H
+            # Define hotkey combination: Cmd+Shift+V
             self.hotkey_listener = keyboard.GlobalHotKeys(
-                {"<cmd>+h": self.hotkey_toggle_recording}
+                {"<cmd>+<shift>+v": self.hotkey_toggle_recording}
             )
             self.hotkey_listener.start()
-            print("Global hotkeys initialized: Cmd+H")
+            print("Global hotkeys initialized: Cmd+Shift+V")
         except Exception as e:
             print(f"Failed to setup hotkeys: {e}")
             rumps.notification(
