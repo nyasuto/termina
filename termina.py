@@ -12,9 +12,9 @@ import threading
 import rumps
 import sounddevice as sd
 import scipy.io.wavfile as wavfile
-from openai import OpenAI
 from dotenv import load_dotenv
 from pynput import keyboard
+from speech_providers import SpeechProviderFactory
 
 
 class TerminaApp(rumps.App):
@@ -24,11 +24,13 @@ class TerminaApp(rumps.App):
         # Load environment variables from .env.local
         load_dotenv('.env.local')
         
-        # Initialize OpenAI client
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        # Initialize speech recognition provider
+        self.speech_provider = SpeechProviderFactory.get_provider()
+        if not self.speech_provider:
+            rumps.alert("Termina Setup Error", "No speech recognition provider available. Please check your configuration.")
         
-        # Recording settings
-        self.sample_rate = 44100
+        # Recording settings (use 16kHz for Whisper compatibility)
+        self.sample_rate = 16000
         self.is_recording = False
         self.audio_data = None
         self.recording_thread = None
@@ -40,8 +42,12 @@ class TerminaApp(rumps.App):
         
         # Menu items
         self.start_item = rumps.MenuItem("Start Recording", callback=self.toggle_recording)
+        self.provider_menu = self._create_provider_menu()
+        
         self.menu = [
             self.start_item,
+            rumps.separator,
+            self.provider_menu,
             rumps.separator,
             rumps.MenuItem("Hotkey: ⌘+H", callback=None),
             rumps.separator,
@@ -77,8 +83,9 @@ class TerminaApp(rumps.App):
         self.start_item.title = "Start Recording"
         rumps.notification("Termina", "Recording Stopped", "Processing audio...")
         
-        # Stop the recording
+        # Stop the recording and wait for it to complete
         sd.stop()
+        sd.wait()  # Wait for recording to finish
         
         # Process the recorded audio
         if self.audio_data is not None:
@@ -135,6 +142,23 @@ class TerminaApp(rumps.App):
             
             print(f"Final audio data shape: {audio_data.shape if hasattr(audio_data, 'shape') else 'No shape attribute'}")
             
+            # Validate audio data
+            if len(audio_data) == 0:
+                print("Error: Audio data is empty")
+                rumps.notification("Termina", "Error", "Recorded audio is empty")
+                return
+            
+            # Check for actual audio content (not just silence)
+            import numpy as np
+            audio_abs = np.abs(audio_data)
+            max_amplitude = np.max(audio_abs)
+            rms_amplitude = np.sqrt(np.mean(audio_abs**2))
+            print(f"Audio validation: max_amplitude={max_amplitude}, rms_amplitude={rms_amplitude}")
+            
+            if max_amplitude < 100:  # Very low amplitude threshold for int16
+                print("Warning: Audio amplitude is very low, might be mostly silence")
+                rumps.notification("Termina", "Warning", "Audio seems very quiet, please speak louder")
+            
             # Save to temporary file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
                 temp_path = temp_file.name
@@ -172,33 +196,21 @@ class TerminaApp(rumps.App):
             print("Audio processing completed")
 
     def _transcribe_audio(self, audio_path):
-        """Transcribe audio using OpenAI Whisper API"""
+        """Transcribe audio using configured speech provider"""
+        if not self.speech_provider:
+            print("No speech provider available")
+            return None
+            
         try:
-            print(f"Starting transcription for file: {audio_path}")
+            print(f"Starting transcription with {self.speech_provider.name}")
+            result = self.speech_provider.transcribe(audio_path)
             
-            # Check if file exists and get its size
-            if not os.path.exists(audio_path):
-                print(f"Error: Audio file does not exist: {audio_path}")
-                return None
-            
-            file_size = os.path.getsize(audio_path)
-            print(f"Audio file size: {file_size} bytes")
-            
-            if file_size == 0:
-                print("Error: Audio file is empty")
-                return None
-            
-            with open(audio_path, 'rb') as audio_file:
-                print("Sending request to OpenAI Whisper API...")
-                transcription = self.client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file,
-                    language="ja"  # Japanese language setting
-                )
+            if result:
+                print(f"Transcription successful: '{result}'")
+            else:
+                print("Transcription failed or returned empty result")
                 
-                result_text = transcription.text.strip()
-                print(f"Transcription successful: '{result_text}'")
-                return result_text
+            return result
                 
         except Exception as e:
             print(f"Transcription error: {e}")
@@ -268,15 +280,99 @@ class TerminaApp(rumps.App):
             print("Stopping recording...")
             self.stop_recording()
 
+    def _create_provider_menu(self):
+        """Create speech provider selection menu"""
+        from speech_providers import SpeechProviderFactory
+        
+        provider_menu = rumps.MenuItem("Speech Provider")
+        
+        # Get available providers
+        available_providers = SpeechProviderFactory.get_available_providers()
+        
+        if not available_providers:
+            provider_menu.add(rumps.MenuItem("No providers available", callback=None))
+            return provider_menu
+        
+        # Add provider options
+        current_provider_name = self.speech_provider.name if self.speech_provider else "None"
+        
+        for provider in available_providers:
+            is_current = provider.name == current_provider_name
+            menu_title = f"● {provider.name}" if is_current else f"○ {provider.name}"
+            
+            # Add internet requirement indicator
+            if provider.requires_internet:
+                menu_title += " 🌐"
+            else:
+                menu_title += " 💻"
+            
+            item = rumps.MenuItem(menu_title, callback=lambda sender, p=provider: self._switch_provider(p))
+            provider_menu.add(item)
+        
+        # Add separator and model management for whisper.cpp
+        if any(not p.requires_internet for p in available_providers):
+            provider_menu.add(rumps.separator)
+            provider_menu.add(rumps.MenuItem("Manage Local Models...", callback=self._manage_models))
+        
+        return provider_menu
+    
+    def _switch_provider(self, new_provider):
+        """Switch to a different speech provider"""
+        if self.is_recording:
+            rumps.notification("Termina", "Cannot Switch", "Please stop recording before switching providers")
+            return
+        
+        old_name = self.speech_provider.name if self.speech_provider else "None"
+        self.speech_provider = new_provider
+        
+        # Update menu to reflect new selection
+        self.provider_menu = self._create_provider_menu()
+        self.menu = [
+            self.start_item,
+            rumps.separator,
+            self.provider_menu,
+            rumps.separator,
+            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.separator,
+            rumps.MenuItem("Quit", callback=rumps.quit_application)
+        ]
+        
+        rumps.notification("Termina", "Provider Switched", f"Switched from {old_name} to {new_provider.name}")
+        print(f"Switched speech provider from {old_name} to {new_provider.name}")
+    
+    def _manage_models(self, _):
+        """Show model management dialog"""
+        # Build info message
+        info_lines = ["Local Whisper Models:\n"]
+        
+        # Available openai-whisper models
+        models = ["tiny", "base", "small", "medium", "large"]
+        for model_name in models:
+            info_lines.append(f"{model_name}: Auto-downloaded when first used")
+        
+        info_lines.append("\nModels are automatically downloaded and cached")
+        info_lines.append("when first selected for use.\n")
+        info_lines.append("Cache location: ~/.cache/whisper/")
+        
+        rumps.alert("Model Management", "\n".join(info_lines))
+
 
 def main():
     # Load environment variables from .env.local
     load_dotenv('.env.local')
     
-    # Check for OpenAI API key
-    if not os.getenv('OPENAI_API_KEY'):
-        rumps.alert("Termina Setup", "Please create a .env.local file with your OPENAI_API_KEY")
-        return
+    # Check if any speech provider is available
+    from speech_providers import SpeechProviderFactory
+    provider = SpeechProviderFactory.get_provider()
+    if not provider:
+        available_providers = SpeechProviderFactory.get_available_providers()
+        if not available_providers:
+            rumps.alert("Termina Setup", 
+                       "No speech recognition providers available.\n\n"
+                       "Please configure:\n"
+                       "• OpenAI API: Set OPENAI_API_KEY in .env.local\n"
+                       "• Local Whisper: Run 'pip install openai-whisper'")
+            return
     
     # Start the application
     app = TerminaApp()

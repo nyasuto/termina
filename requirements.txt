@@ -8,6 +8,7 @@ sounddevice>=0.4.6
 
 # Audio file processing  
 scipy>=1.11.0
+numpy>=1.21.0
 
 # OpenAI Whisper API client
 openai>=1.0.0
@@ -17,3 +18,7 @@ python-dotenv>=1.0.0
 
 # Global hotkey support
 pynput>=1.7.6
+
+# Local Whisper support (optional)
+openai-whisper>=20231117
+requests>=2.25.0  # For model downloading

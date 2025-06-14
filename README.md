@@ -55,22 +55,47 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. **OpenAI APIキーを設定**
+4. **音声認識プロバイダーを設定**
 
-`.env.local`ファイルを作成してAPIキーを設定：
+`.env.local`ファイルを作成して設定：
 ```bash
+# OpenAI APIを使用する場合（推奨）
 echo "OPENAI_API_KEY=your-openai-api-key-here" > .env.local
+echo "SPEECH_PROVIDER=openai" >> .env.local
 ```
 
 または手動で`.env.local`ファイルを作成し、以下の内容を記述：
 ```
+# OpenAI Whisper API (推奨)
 OPENAI_API_KEY=your-openai-api-key-here
+SPEECH_PROVIDER=openai
+
+# またはローカルWhisper使用（オフライン）
+# SPEECH_PROVIDER=whisper_cpp
 ```
 
 5. **アプリを実行**
 ```bash
 python termina.py
 ```
+
+### ローカルWhisper（オフライン音声認識）の使用
+
+インターネット不要でプライバシーを重視する場合：
+
+1. **openai-whisperをインストール**
+```bash
+pip install openai-whisper
+```
+
+2. **設定ファイルを更新**
+```bash
+echo "SPEECH_PROVIDER=whisper_cpp" >> .env.local
+```
+
+3. **初回使用時にモデル自動ダウンロード**
+- 初回使用時に選択したモデルが自動ダウンロード
+- メニューバー > Speech Provider > Manage Local Models でモデル情報確認
 
 ### 初回実行時の設定
 
@@ -94,6 +119,15 @@ python termina.py
 #### ホットキーで操作
 - **⌘+H**: 録音の開始・停止を切り替え
 - どのアプリからでもホットキーで録音をコントロール可能
+
+#### 音声認識プロバイダーの切り替え
+- メニューバー > Speech Provider で切り替え可能
+- 🌐 = インターネット必要、💻 = オフライン利用可能
+
+| プロバイダー | 精度 | 速度 | オフライン | コスト | 初期サイズ |
+|-------------|------|------|-----------|--------|-----------|
+| OpenAI API 🌐 | 最高 | 高速 | ❌ | 従量課金 | 0MB |
+| Local Whisper 💻 | 高い | 高速 | ✅ | 無料 | 142MB |
 
 ### トラブルシューティング
 
@@ -119,9 +153,9 @@ python termina.py
 	•	⚙️ ホットキーのカスタマイズ機能
 	•	🎧 無音検出による自動録音停止
 	•	💬 テキストペースト前の確認プロンプト
-	•	🛠 オフラインで使えるWhisper（whisper.cpp）への対応
 	•	🎯 録音時間の表示
 	•	📝 録音履歴の保存・管理
+	•	🎛️ モデル精度の選択機能（tiny/base/small/medium/large）
 
 ⸻
 
