@@ -12,11 +12,15 @@ import rumps
 import sounddevice as sd
 import scipy.io.wavfile as wavfile
 from openai import OpenAI
+from dotenv import load_dotenv
 
 
 class WhisperTermApp(rumps.App):
     def __init__(self):
         super(WhisperTermApp, self).__init__("🎤", quit_button=None)
+        
+        # Load environment variables from .env.local
+        load_dotenv('.env.local')
         
         # Initialize OpenAI client
         self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -112,9 +116,12 @@ class WhisperTermApp(rumps.App):
 
 
 def main():
+    # Load environment variables from .env.local
+    load_dotenv('.env.local')
+    
     # Check for OpenAI API key
     if not os.getenv('OPENAI_API_KEY'):
-        rumps.alert("WhisperTerm Setup", "Please set your OPENAI_API_KEY environment variable")
+        rumps.alert("WhisperTerm Setup", "Please create a .env.local file with your OPENAI_API_KEY")
         return
     
     # Start the application

@@ -52,8 +52,15 @@ pip install -r requirements.txt
 ```
 
 4. **OpenAI APIキーを設定**
+
+`.env.local`ファイルを作成してAPIキーを設定：
 ```bash
-export OPENAI_API_KEY="your-openai-api-key-here"
+echo "OPENAI_API_KEY=your-openai-api-key-here" > .env.local
+```
+
+または手動で`.env.local`ファイルを作成し、以下の内容を記述：
+```
+OPENAI_API_KEY=your-openai-api-key-here
 ```
 
 5. **アプリを実行**
@@ -78,7 +85,7 @@ python whisper_menu_app.py
 
 ### トラブルシューティング
 
-- **「OPENAI_API_KEY not found」エラー**: 環境変数が正しく設定されているか確認
+- **「Please create a .env.local file」エラー**: `.env.local`ファイルが作成されているか、APIキーが正しく設定されているか確認
 - **マイクが認識されない**: システム設定でアプリにマイクアクセス許可を与える
 - **Terminalでコマンドが実行されない**: AppleScriptのアクセス許可を確認
 
