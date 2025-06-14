@@ -1,5 +1,16 @@
+# WhisperTerm - macOS Voice Input Application Dependencies
+
+# Menu bar UI for macOS
 rumps>=0.4.0
+
+# Audio recording
 sounddevice>=0.4.6
+
+# Audio file processing  
 scipy>=1.11.0
+
+# OpenAI Whisper API client
 openai>=1.0.0
+
+# Environment variable management
 python-dotenv>=1.0.0
