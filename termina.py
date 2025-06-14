@@ -313,6 +313,22 @@ class TerminaApp(rumps.App):
         if any(not p.requires_internet for p in available_providers):
             provider_menu.add(rumps.separator)
             provider_menu.add(rumps.MenuItem("Manage Local Models...", callback=self._manage_models))
+            
+            # Add model size selection for local whisper
+            model_menu = rumps.MenuItem("Select Model Size")
+            model_sizes = [
+                ("tiny", "Tiny (39MB) - Fastest"),
+                ("base", "Base (142MB) - Balanced"),
+                ("small", "Small (466MB) - Good"),
+                ("medium", "Medium (1.5GB) - Better"),
+                ("large", "Large (3.1GB) - Best Accuracy")
+            ]
+            
+            for model_name, description in model_sizes:
+                model_item = rumps.MenuItem(description, callback=lambda sender, model=model_name: self._select_model(model))
+                model_menu.add(model_item)
+            
+            provider_menu.add(model_menu)
         
         return provider_menu
     
@@ -355,6 +371,27 @@ class TerminaApp(rumps.App):
         info_lines.append("Cache location: ~/.cache/whisper/")
         
         rumps.alert("Model Management", "\n".join(info_lines))
+    
+    def _select_model(self, model_name):
+        """Select a specific model size for local whisper"""
+        if self.is_recording:
+            rumps.notification("Termina", "Cannot Switch", "Please stop recording before changing model")
+            return
+        
+        # Update the WhisperCppProvider to use the selected model
+        from speech_providers import WhisperCppProvider
+        if isinstance(self.speech_provider, WhisperCppProvider):
+            # Force reload with new model
+            self.speech_provider._model = None
+            self.speech_provider._model_name = None
+            if self.speech_provider._load_model(model_name):
+                rumps.notification("Termina", "Model Changed", f"Switched to {model_name} model")
+                print(f"Successfully switched to {model_name} model")
+            else:
+                rumps.notification("Termina", "Error", f"Failed to load {model_name} model")
+                print(f"Failed to load {model_name} model")
+        else:
+            rumps.notification("Termina", "Error", "Please switch to Local Whisper provider first")
 
 
 def main():
