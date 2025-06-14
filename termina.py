@@ -29,8 +29,8 @@ class TerminaApp(rumps.App):
         if not self.speech_provider:
             rumps.alert("Termina Setup Error", "No speech recognition provider available. Please check your configuration.")
         
-        # Recording settings
-        self.sample_rate = 44100
+        # Recording settings (use 16kHz for Whisper compatibility)
+        self.sample_rate = 16000
         self.is_recording = False
         self.audio_data = None
         self.recording_thread = None
@@ -83,8 +83,9 @@ class TerminaApp(rumps.App):
         self.start_item.title = "Start Recording"
         rumps.notification("Termina", "Recording Stopped", "Processing audio...")
         
-        # Stop the recording
+        # Stop the recording and wait for it to complete
         sd.stop()
+        sd.wait()  # Wait for recording to finish
         
         # Process the recorded audio
         if self.audio_data is not None:
@@ -140,6 +141,23 @@ class TerminaApp(rumps.App):
                 print("No start time recorded, using full buffer")
             
             print(f"Final audio data shape: {audio_data.shape if hasattr(audio_data, 'shape') else 'No shape attribute'}")
+            
+            # Validate audio data
+            if len(audio_data) == 0:
+                print("Error: Audio data is empty")
+                rumps.notification("Termina", "Error", "Recorded audio is empty")
+                return
+            
+            # Check for actual audio content (not just silence)
+            import numpy as np
+            audio_abs = np.abs(audio_data)
+            max_amplitude = np.max(audio_abs)
+            rms_amplitude = np.sqrt(np.mean(audio_abs**2))
+            print(f"Audio validation: max_amplitude={max_amplitude}, rms_amplitude={rms_amplitude}")
+            
+            if max_amplitude < 100:  # Very low amplitude threshold for int16
+                print("Warning: Audio amplitude is very low, might be mostly silence")
+                rumps.notification("Termina", "Warning", "Audio seems very quiet, please speak louder")
             
             # Save to temporary file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
