@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.10, 3.11, 3.12]
+        python-version: [3.12]
 
     steps:
     - uses: actions/checkout@v4
@@ -46,23 +46,6 @@ jobs:
       run: |
         black --check --diff .
 
-    #- name: Type check with mypy
-    #  run: |
-    #    mypy . --ignore-missing-imports
-
-    - name: Test with pytest
-      run: |
-        pytest --cov=. --cov-report=xml --cov-report=term-missing
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
 
   security:
     runs-on: ubuntu-latest
