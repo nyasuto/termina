@@ -8,6 +8,10 @@ WhisperTerm is a macOS desktop application that enables voice control of Termina
 
 **Current Status**: Early development stage - comprehensive documentation exists but implementation is not yet started.
 
+## Commit rule
+if you are in main branch, create new branch then commit the changes into new branch
+do not commit into main branch directly
+
 ## Technology Stack
 
 - **Language**: Python 3.9+
