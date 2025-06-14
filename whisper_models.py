@@ -123,7 +123,7 @@ class WhisperModelManager:
         print(f"Downloading {model_name} model ({size_mb}MB)...")
 
         try:
-            response = requests.get(url, stream=True)
+            response = requests.get(url, stream=True, timeout=30)
             response.raise_for_status()
 
             total_size = int(response.headers.get("content-length", 0))
