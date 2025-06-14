@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-WhisperTerm - macOS Menu Bar Voice Command Application
-Records audio, transcribes with OpenAI Whisper, and executes commands in Terminal
+WhisperTerm - macOS Menu Bar Voice Input Application
+Records audio, transcribes with OpenAI Whisper, and pastes text to active applications
+Supports manual recording controls and global hotkeys (Cmd+Shift+R)
 """
 
 import os
@@ -13,6 +14,7 @@ import sounddevice as sd
 import scipy.io.wavfile as wavfile
 from openai import OpenAI
 from dotenv import load_dotenv
+from pynput import keyboard
 
 
 class WhisperTermApp(rumps.App):
@@ -32,10 +34,16 @@ class WhisperTermApp(rumps.App):
         self.recording_thread = None
         self.recording_start_time = None
         
+        # Hotkey settings
+        self.hotkey_listener = None
+        self.setup_hotkeys()
+        
         # Menu items
         self.start_item = rumps.MenuItem("Start Recording", callback=self.toggle_recording)
         self.menu = [
             self.start_item,
+            rumps.separator,
+            rumps.MenuItem("Hotkey: ⌘+Shift+R", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application)
         ]
@@ -226,6 +234,40 @@ class WhisperTermApp(rumps.App):
             traceback.print_exc()
             rumps.notification("WhisperTerm", "Error", f"Paste failed: {str(e)}")
 
+    def setup_hotkeys(self):
+        """Setup global hotkeys"""
+        try:
+            print("Setting up global hotkeys...")
+            # Define hotkey combination: Cmd+Shift+R
+            self.hotkey_listener = keyboard.GlobalHotKeys({
+                '<cmd>+<shift>+r': self.hotkey_toggle_recording
+            })
+            self.hotkey_listener.start()
+            print("Global hotkeys initialized: Cmd+Shift+R")
+        except Exception as e:
+            print(f"Failed to setup hotkeys: {e}")
+            rumps.notification("WhisperTerm", "Hotkey Error", 
+                             "Failed to setup global hotkeys. Check accessibility permissions.")
+
+    def hotkey_toggle_recording(self):
+        """Handle hotkey press for recording toggle"""
+        try:
+            print("Hotkey pressed: Cmd+Shift+R")
+            self.toggle_recording(None)
+        except Exception as e:
+            print(f"Hotkey error: {e}")
+
+    def cleanup(self):
+        """Cleanup resources on app exit"""
+        print("Cleaning up resources...")
+        if self.hotkey_listener:
+            self.hotkey_listener.stop()
+            print("Hotkey listener stopped")
+        
+        if self.is_recording:
+            print("Stopping recording...")
+            self.stop_recording()
+
 
 def main():
     # Load environment variables from .env.local
@@ -238,7 +280,12 @@ def main():
     
     # Start the application
     app = WhisperTermApp()
-    app.run()
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        print("Application interrupted")
+    finally:
+        app.cleanup()
 
 
 if __name__ == "__main__":
