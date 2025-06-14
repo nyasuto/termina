@@ -55,16 +55,23 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. **OpenAI APIキーを設定**
+4. **音声認識プロバイダーを設定**
 
-`.env.local`ファイルを作成してAPIキーを設定：
+`.env.local`ファイルを作成して設定：
 ```bash
+# OpenAI APIを使用する場合（推奨）
 echo "OPENAI_API_KEY=your-openai-api-key-here" > .env.local
+echo "SPEECH_PROVIDER=openai" >> .env.local
 ```
 
 または手動で`.env.local`ファイルを作成し、以下の内容を記述：
 ```
+# OpenAI Whisper API (推奨)
 OPENAI_API_KEY=your-openai-api-key-here
+SPEECH_PROVIDER=openai
+
+# または将来的にローカルWhisper使用
+# SPEECH_PROVIDER=whisper_cpp
 ```
 
 5. **アプリを実行**

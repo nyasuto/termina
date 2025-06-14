@@ -12,9 +12,9 @@ import threading
 import rumps
 import sounddevice as sd
 import scipy.io.wavfile as wavfile
-from openai import OpenAI
 from dotenv import load_dotenv
 from pynput import keyboard
+from speech_providers import SpeechProviderFactory
 
 
 class TerminaApp(rumps.App):
@@ -24,8 +24,10 @@ class TerminaApp(rumps.App):
         # Load environment variables from .env.local
         load_dotenv('.env.local')
         
-        # Initialize OpenAI client
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        # Initialize speech recognition provider
+        self.speech_provider = SpeechProviderFactory.get_provider()
+        if not self.speech_provider:
+            rumps.alert("Termina Setup Error", "No speech recognition provider available. Please check your configuration.")
         
         # Recording settings
         self.sample_rate = 44100
@@ -172,33 +174,21 @@ class TerminaApp(rumps.App):
             print("Audio processing completed")
 
     def _transcribe_audio(self, audio_path):
-        """Transcribe audio using OpenAI Whisper API"""
+        """Transcribe audio using configured speech provider"""
+        if not self.speech_provider:
+            print("No speech provider available")
+            return None
+            
         try:
-            print(f"Starting transcription for file: {audio_path}")
+            print(f"Starting transcription with {self.speech_provider.name}")
+            result = self.speech_provider.transcribe(audio_path)
             
-            # Check if file exists and get its size
-            if not os.path.exists(audio_path):
-                print(f"Error: Audio file does not exist: {audio_path}")
-                return None
-            
-            file_size = os.path.getsize(audio_path)
-            print(f"Audio file size: {file_size} bytes")
-            
-            if file_size == 0:
-                print("Error: Audio file is empty")
-                return None
-            
-            with open(audio_path, 'rb') as audio_file:
-                print("Sending request to OpenAI Whisper API...")
-                transcription = self.client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file,
-                    language="ja"  # Japanese language setting
-                )
+            if result:
+                print(f"Transcription successful: '{result}'")
+            else:
+                print("Transcription failed or returned empty result")
                 
-                result_text = transcription.text.strip()
-                print(f"Transcription successful: '{result_text}'")
-                return result_text
+            return result
                 
         except Exception as e:
             print(f"Transcription error: {e}")
@@ -273,10 +263,18 @@ def main():
     # Load environment variables from .env.local
     load_dotenv('.env.local')
     
-    # Check for OpenAI API key
-    if not os.getenv('OPENAI_API_KEY'):
-        rumps.alert("Termina Setup", "Please create a .env.local file with your OPENAI_API_KEY")
-        return
+    # Check if any speech provider is available
+    from speech_providers import SpeechProviderFactory
+    provider = SpeechProviderFactory.get_provider()
+    if not provider:
+        available_providers = SpeechProviderFactory.get_available_providers()
+        if not available_providers:
+            rumps.alert("Termina Setup", 
+                       "No speech recognition providers available.\n\n"
+                       "Please configure:\n"
+                       "• OpenAI API: Set OPENAI_API_KEY in .env.local\n"
+                       "• Local Whisper: Install whisper.cpp (coming soon)")
+            return
     
     # Start the application
     app = TerminaApp()
