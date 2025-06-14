@@ -26,42 +26,68 @@ WhisperTermはPythonで作られたmacOSのメニューバー常駐アプリで�
 
 🚀 はじめかた
 
-1. リポジトリをクローン
+### 前提条件
+- macOS 10.14以上
+- Python 3.9以上
+- OpenAI APIキー（[OpenAI Platform](https://platform.openai.com/)で取得）
+- マイクアクセス許可
 
+### インストール手順
+
+1. **リポジトリをクローン**
+```bash
 git clone https://github.com/your-username/whisperterm.git
 cd whisperterm
+```
 
-2. 仮想環境を作成（推奨）
-
+2. **仮想環境を作成（推奨）**
+```bash
 python3 -m venv venv
 source venv/bin/activate
+```
 
-3. 必要なライブラリをインストール
-
+3. **必要なライブラリをインストール**
+```bash
 pip install -r requirements.txt
+```
 
-requirements.txt の内容
+4. **OpenAI APIキーを設定**
 
-rumps
-sounddevice
-scipy
-openai
+`.env.local`ファイルを作成してAPIキーを設定：
+```bash
+echo "OPENAI_API_KEY=your-openai-api-key-here" > .env.local
+```
 
-4. OpenAI APIキーを設定
+または手動で`.env.local`ファイルを作成し、以下の内容を記述：
+```
+OPENAI_API_KEY=your-openai-api-key-here
+```
 
-環境変数として設定するか、スクリプト内に直接記述します：
-
-export OPENAI_API_KEY="your-key-here"
-
-もしくはスクリプト内で：
-
-openai.api_key = "your-key-here"
-
-5. アプリを実行
-
+5. **アプリを実行**
+```bash
 python whisper_menu_app.py
+```
 
-実行後、メニューバーに 🎤 アイコンが表示され、「Start Recording」を選ぶと音声を録音してテキスト化し、Terminalに送信します。
+### 初回実行時の設定
+
+初回実行時には以下の許可が必要になる場合があります：
+
+1. **マイクアクセス許可**: システム設定 → セキュリティとプライバシー → マイク
+2. **ターミナルアプリへのアクセス許可**: AppleScript実行時に確認ダイアログが表示されます
+
+### 使用方法
+
+1. アプリを実行すると、メニューバーに 🎤 アイコンが表示されます
+2. アイコンをクリックして「Start Recording」を選択
+3. 5秒間音声を録音（録音中は通知で確認できます）
+4. 音声がテキストに変換され、自動的にTerminalで実行されます
+5. 実行結果は通知で確認できます
+
+### トラブルシューティング
+
+- **「Please create a .env.local file」エラー**: `.env.local`ファイルが作成されているか、APIキーが正しく設定されているか確認
+- **マイクが認識されない**: システム設定でアプリにマイクアクセス許可を与える
+- **Terminalでコマンドが実行されない**: AppleScriptのアクセス許可を確認
 
 ⸻
 

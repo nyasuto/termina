@@ -44,4 +44,5 @@ temp.wav
 
 # API keys (if stored in files)
 .env
+.env.local
 config.json
