@@ -135,7 +135,7 @@ class WhisperCppProvider(SpeechProvider):
             print(f"Error checking openai-whisper availability: {e}")
             return False
 
-    def _load_model(self, model_name: str = None) -> bool:
+    def _load_model(self, model_name: Optional[str] = None) -> bool:
         """Load whisper model"""
         try:
             import whisper
@@ -321,7 +321,7 @@ class SpeechProviderFactory:
     """Factory for creating speech recognition providers"""
 
     @staticmethod
-    def get_provider(provider_name: str = None) -> Optional[SpeechProvider]:
+    def get_provider(provider_name: Optional[str] = None) -> Optional[SpeechProvider]:
         """
         Get speech provider by name or auto-detect best available
 
@@ -336,13 +336,13 @@ class SpeechProviderFactory:
         # If specific provider requested, try to get it
         if provider_name:
             if provider_name.lower() == "openai":
-                provider = OpenAIProvider()
-                if provider.is_available():
-                    return provider
+                openai_provider = OpenAIProvider()
+                if openai_provider.is_available():
+                    return openai_provider
             elif provider_name.lower() == "whisper_cpp":
-                provider = WhisperCppProvider()
-                if provider.is_available():
-                    return provider
+                whisper_provider = WhisperCppProvider()
+                if whisper_provider.is_available():
+                    return whisper_provider
             print(f"Requested provider '{provider_name}' not available")
             return None
 
@@ -350,15 +350,15 @@ class SpeechProviderFactory:
         provider_name_env = os.getenv("SPEECH_PROVIDER", "auto").lower()
 
         if provider_name_env == "openai":
-            provider = OpenAIProvider()
-            if provider.is_available():
-                print(f"Using configured provider: {provider.name}")
-                return provider
+            openai_provider = OpenAIProvider()
+            if openai_provider.is_available():
+                print(f"Using configured provider: {openai_provider.name}")
+                return openai_provider
         elif provider_name_env == "whisper_cpp":
-            provider = WhisperCppProvider()
-            if provider.is_available():
-                print(f"Using configured provider: {provider.name}")
-                return provider
+            whisper_provider = WhisperCppProvider()
+            if whisper_provider.is_available():
+                print(f"Using configured provider: {whisper_provider.name}")
+                return whisper_provider
 
         # Fallback: try providers in order of preference
         providers = [OpenAIProvider(), WhisperCppProvider()]
