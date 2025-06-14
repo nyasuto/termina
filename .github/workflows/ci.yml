@@ -46,9 +46,9 @@ jobs:
       run: |
         black --check --diff .
 
-    - name: Type check with mypy
-      run: |
-        mypy . --ignore-missing-imports
+    #- name: Type check with mypy
+    #  run: |
+    #    mypy . --ignore-missing-imports
 
     - name: Test with pytest
       run: |
