@@ -1,6 +1,6 @@
-🎤 WhisperTerm（Mac用音声入力アプリ）
+🎤 Termina（Mac用音声入力アプリ）
 
-WhisperTermはPythonで作られたmacOSのメニューバー常駐アプリです。音声入力を取得し、OpenAIのWhisper APIで文字起こしを行い、その結果を現在アクティブなアプリケーションにテキストとしてペーストします。
+TerminaはPythonで作られたmacOSのメニューバー常駐アプリです。音声入力を取得し、OpenAIのWhisper APIで文字起こしを行い、その結果を現在アクティブなアプリケーションにテキストとしてペーストします。
 
 ⸻
 
@@ -9,7 +9,7 @@ WhisperTermはPythonで作られたmacOSのメニューバー常駐アプリで�
 	•	手動録音開始・停止（任意の長さで録音可能）
 	•	音声から変換されたテキストを現在のアクティブアプリにペースト
 	•	OpenAI Whisper APIを利用した日本語音声認識
-	•	グローバルホットキー対応（⌘+Shift+R で録音開始・停止）
+	•	グローバルホットキー対応（⌘+H で録音開始・停止）
 
 ⸻
 
@@ -40,8 +40,8 @@ WhisperTermはPythonで作られたmacOSのメニューバー常駐アプリで�
 
 1. **リポジトリをクローン**
 ```bash
-git clone https://github.com/your-username/whisperterm.git
-cd whisperterm
+git clone https://github.com/your-username/termina.git
+cd termina
 ```
 
 2. **仮想環境を作成（推奨）**
@@ -69,7 +69,7 @@ OPENAI_API_KEY=your-openai-api-key-here
 
 5. **アプリを実行**
 ```bash
-python whisper_menu_app.py
+python termina.py
 ```
 
 ### 初回実行時の設定
@@ -92,7 +92,7 @@ python whisper_menu_app.py
 7. ペースト結果は通知で確認できます
 
 #### ホットキーで操作
-- **⌘+Shift+R**: 録音の開始・停止を切り替え
+- **⌘+H**: 録音の開始・停止を切り替え
 - どのアプリからでもホットキーで録音をコントロール可能
 
 ### トラブルシューティング

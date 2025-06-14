@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-WhisperTerm - macOS Menu Bar Voice Input Application
+Termina - macOS Menu Bar Voice Input Application
 Records audio, transcribes with OpenAI Whisper, and pastes text to active applications
-Supports manual recording controls and global hotkeys (Cmd+Shift+R)
+Supports manual recording controls and global hotkeys (Cmd+H)
 """
 
 import os
@@ -17,9 +17,9 @@ from dotenv import load_dotenv
 from pynput import keyboard
 
 
-class WhisperTermApp(rumps.App):
+class TerminaApp(rumps.App):
     def __init__(self):
-        super(WhisperTermApp, self).__init__("🎤", quit_button=None)
+        super(TerminaApp, self).__init__("🎤", quit_button=None)
         
         # Load environment variables from .env.local
         load_dotenv('.env.local')
@@ -43,7 +43,7 @@ class WhisperTermApp(rumps.App):
         self.menu = [
             self.start_item,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+Shift+R", callback=None),
+            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application)
         ]
@@ -61,7 +61,7 @@ class WhisperTermApp(rumps.App):
         self.is_recording = True
         self.recording_start_time = time.time()
         self.start_item.title = "Stop Recording"
-        rumps.notification("WhisperTerm", "Recording Started", "Recording... Click 'Stop Recording' to finish")
+        rumps.notification("Termina", "Recording Started", "Recording... Click 'Stop Recording' to finish")
         
         # Start recording in a separate thread
         self.recording_thread = threading.Thread(target=self._start_continuous_recording)
@@ -75,7 +75,7 @@ class WhisperTermApp(rumps.App):
             
         self.is_recording = False
         self.start_item.title = "Start Recording"
-        rumps.notification("WhisperTerm", "Recording Stopped", "Processing audio...")
+        rumps.notification("Termina", "Recording Stopped", "Processing audio...")
         
         # Stop the recording
         sd.stop()
@@ -98,7 +98,7 @@ class WhisperTermApp(rumps.App):
                 dtype='int16'
             )
         except Exception as e:
-            rumps.notification("WhisperTerm", "Error", f"Recording failed: {str(e)}")
+            rumps.notification("Termina", "Error", f"Recording failed: {str(e)}")
             self.is_recording = False
             self.start_item.title = "Start Recording"
     
@@ -110,7 +110,7 @@ class WhisperTermApp(rumps.App):
             
             if self.audio_data is None:
                 print("Error: No audio data to process")
-                rumps.notification("WhisperTerm", "Error", "No audio data to process")
+                rumps.notification("Termina", "Error", "No audio data to process")
                 return
             
             print(f"Audio data shape: {self.audio_data.shape if hasattr(self.audio_data, 'shape') else 'No shape attribute'}")
@@ -155,17 +155,17 @@ class WhisperTermApp(rumps.App):
                 # Paste text to current application
                 print("Attempting to paste text...")
                 self._paste_text(transcription)
-                rumps.notification("WhisperTerm", "Text Pasted", f"Pasted: {transcription}")
+                rumps.notification("Termina", "Text Pasted", f"Pasted: {transcription}")
                 print("Text pasted successfully")
             else:
                 print("No transcription result received")
-                rumps.notification("WhisperTerm", "Error", "Failed to transcribe audio")
+                rumps.notification("Termina", "Error", "Failed to transcribe audio")
                 
         except Exception as e:
             print(f"Processing failed with error: {str(e)}")
             import traceback
             traceback.print_exc()
-            rumps.notification("WhisperTerm", "Error", f"Processing failed: {str(e)}")
+            rumps.notification("Termina", "Error", f"Processing failed: {str(e)}")
         finally:
             self.audio_data = None
             self.recording_start_time = None
@@ -227,12 +227,12 @@ class WhisperTermApp(rumps.App):
         except subprocess.CalledProcessError as e:
             print(f"AppleScript error: {e}")
             print(f"Error output: {e.stderr if hasattr(e, 'stderr') else 'No stderr'}")
-            rumps.notification("WhisperTerm", "Error", "Failed to paste text")
+            rumps.notification("Termina", "Error", "Failed to paste text")
         except Exception as e:
             print(f"Unexpected error in paste_text: {e}")
             import traceback
             traceback.print_exc()
-            rumps.notification("WhisperTerm", "Error", f"Paste failed: {str(e)}")
+            rumps.notification("Termina", "Error", f"Paste failed: {str(e)}")
 
     def setup_hotkeys(self):
         """Setup global hotkeys"""
@@ -246,7 +246,7 @@ class WhisperTermApp(rumps.App):
             print("Global hotkeys initialized: Cmd+H")
         except Exception as e:
             print(f"Failed to setup hotkeys: {e}")
-            rumps.notification("WhisperTerm", "Hotkey Error", 
+            rumps.notification("Termina", "Hotkey Error", 
                              "Failed to setup global hotkeys. Check accessibility permissions.")
 
     def hotkey_toggle_recording(self):
@@ -275,11 +275,11 @@ def main():
     
     # Check for OpenAI API key
     if not os.getenv('OPENAI_API_KEY'):
-        rumps.alert("WhisperTerm Setup", "Please create a .env.local file with your OPENAI_API_KEY")
+        rumps.alert("Termina Setup", "Please create a .env.local file with your OPENAI_API_KEY")
         return
     
     # Start the application
-    app = WhisperTermApp()
+    app = TerminaApp()
     try:
         app.run()
     except KeyboardInterrupt:
