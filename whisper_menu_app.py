@@ -75,9 +75,9 @@ class WhisperTermApp(rumps.App):
             os.unlink(temp_path)
             
             if transcription:
-                # Send command to Terminal
-                self._send_to_terminal(transcription)
-                rumps.notification("WhisperTerm", "Command Executed", f"Sent: {transcription}")
+                # Paste text to current active application
+                self._paste_text(transcription)
+                rumps.notification("WhisperTerm", "Text Pasted", f"Pasted: {transcription}")
             else:
                 rumps.notification("WhisperTerm", "Error", "Failed to transcribe audio")
                 
@@ -100,19 +100,21 @@ class WhisperTermApp(rumps.App):
             print(f"Transcription error: {e}")
             return None
 
-    def _send_to_terminal(self, command):
-        """Send command to Terminal using AppleScript"""
+    def _paste_text(self, text):
+        """Paste text to the currently active application using AppleScript"""
         try:
+            # Escape special characters for AppleScript
+            escaped_text = text.replace('"', '\\"').replace('\\', '\\\\')
+            
             applescript = f'''
-            tell application "Terminal"
-                activate
-                do script "{command}"
+            tell application "System Events"
+                keystroke "{escaped_text}"
             end tell
             '''
             subprocess.run(['osascript', '-e', applescript], check=True)
         except subprocess.CalledProcessError as e:
             print(f"AppleScript error: {e}")
-            rumps.notification("WhisperTerm", "Error", "Failed to send command to Terminal")
+            rumps.notification("WhisperTerm", "Error", "Failed to paste text")
 
 
 def main():
