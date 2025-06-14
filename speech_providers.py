@@ -139,11 +139,12 @@ class WhisperCppProvider(SpeechProvider):
         try:
             import whisper
             
-            # Determine which model to use
+            # Determine which model to use (prioritize accuracy over speed)
             if model_name:
                 target_model = model_name
             else:
-                target_model = "base"  # Default to base model for good balance
+                # Use large model for best accuracy (if user has sufficient resources)
+                target_model = "large"  # Best accuracy, requires more memory/CPU
             
             # Load the model if not already loaded
             if self._model_name != target_model:
@@ -208,17 +209,47 @@ class WhisperCppProvider(SpeechProvider):
                     audio_data = signal.resample(audio_data, num_samples)
                     sample_rate = 16000
                 
+                # Improve audio quality with noise reduction and normalization
+                # Apply simple noise gate to reduce background noise
+                noise_threshold = np.std(audio_data) * 0.1
+                audio_data = np.where(np.abs(audio_data) < noise_threshold, 0, audio_data)
+                
+                # Normalize audio to optimal range for Whisper
+                if np.max(np.abs(audio_data)) > 0:
+                    audio_data = audio_data / (np.max(np.abs(audio_data)) * 1.1)  # Leave some headroom
+                
                 # Ensure audio length is reasonable (not too short/long)
                 if len(audio_data) < 1600:  # Less than 0.1 seconds
                     print("Audio too short, padding with silence")
                     audio_data = np.pad(audio_data, (0, 1600 - len(audio_data)), 'constant', constant_values=0)
                 
+                # Apply gentle high-pass filter to remove low-frequency noise
+                if sample_rate == 16000:
+                    from scipy.signal import butter, filtfilt
+                    nyquist = sample_rate / 2
+                    low_cutoff = 80 / nyquist  # Remove frequencies below 80Hz
+                    b, a = butter(1, low_cutoff, btype='high')
+                    audio_data = filtfilt(b, a, audio_data)
+                
                 print(f"Preprocessed audio: length={len(audio_data)}, sample_rate={sample_rate}")
                 print(f"Audio stats: min={np.min(audio_data):.4f}, max={np.max(audio_data):.4f}, mean={np.mean(audio_data):.4f}")
                 
                 print(f"Transcribing with model: {self._model_name}")
-                # Add verbose output for debugging
-                result = self._model.transcribe(audio_data, language='ja', verbose=True)
+                # Optimize transcription settings for best accuracy
+                result = self._model.transcribe(
+                    audio_data,
+                    language='ja',
+                    verbose=True,
+                    beam_size=5,  # Use beam search for better accuracy (default is 5)
+                    best_of=5,    # Generate multiple candidates and pick best
+                    temperature=0.0,  # Use deterministic decoding for consistency
+                    patience=1.0,  # Wait longer for better results
+                    length_penalty=1.0,  # Don't penalize longer sequences
+                    suppress_tokens=[-1],  # Suppress silence token
+                    initial_prompt="以下は日本語の音声です。",  # Japanese prompt for better context
+                    condition_on_previous_text=False,  # Don't condition on previous text for short clips
+                    fp16=False  # Use FP32 for better precision on CPU
+                )
                 
             except Exception as audio_error:
                 print(f"Manual audio loading failed: {audio_error}")
