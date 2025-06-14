@@ -238,12 +238,12 @@ class WhisperTermApp(rumps.App):
         """Setup global hotkeys"""
         try:
             print("Setting up global hotkeys...")
-            # Define hotkey combination: Cmd+Shift+R
+            # Define hotkey combination: Cmd+H
             self.hotkey_listener = keyboard.GlobalHotKeys({
-                '<cmd>+<shift>+r': self.hotkey_toggle_recording
+                '<cmd>+h': self.hotkey_toggle_recording
             })
             self.hotkey_listener.start()
-            print("Global hotkeys initialized: Cmd+Shift+R")
+            print("Global hotkeys initialized: Cmd+H")
         except Exception as e:
             print(f"Failed to setup hotkeys: {e}")
             rumps.notification("WhisperTerm", "Hotkey Error", 
@@ -252,7 +252,7 @@ class WhisperTermApp(rumps.App):
     def hotkey_toggle_recording(self):
         """Handle hotkey press for recording toggle"""
         try:
-            print("Hotkey pressed: Cmd+Shift+R")
+            print("Hotkey pressed: Cmd+H")
             self.toggle_recording(None)
         except Exception as e:
             print(f"Hotkey error: {e}")
