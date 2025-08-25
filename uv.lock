@@ -2071,6 +2071,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "toml" },
 ]
 local-whisper = [
     { name = "openai-whisper" },
@@ -2095,6 +2096,7 @@ dev = [
     { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "ruff", specifier = ">=0.6.0" },
+    { name = "toml", specifier = ">=0.10.2" },
 ]
 local-whisper = [{ name = "openai-whisper", specifier = ">=20231117" }]
 

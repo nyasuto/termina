@@ -59,7 +59,8 @@ dev = [
     "pytest-cov>=4.0.0",
     "ruff>=0.6.0",
     "mypy>=1.0.0",
-    "pip-audit>=2.0.0",  # Modern alternative to safety
+    "pip-audit>=2.0.0", # Modern alternative to safety
+    "toml>=0.10.2",
 ]
 
 # Optional dependencies for local Whisper support
@@ -123,8 +124,11 @@ skips = ["B101", "B601"]
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --cov=. --cov-report=term-missing"
+addopts = "-ra -q --cov=. --cov-report=term-missing --cov-report=xml"
 testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
 [tool.coverage.run]
 source = ["."]
