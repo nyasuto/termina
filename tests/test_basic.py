@@ -35,8 +35,8 @@ def test_speech_provider_factory():
     assert isinstance(providers, list)
 
     # Test getting OpenAI provider (may be None if not available)
-    openai_provider = SpeechProviderFactory.get_provider("openai")
     # Provider availability depends on environment, just test it doesn't crash
+    SpeechProviderFactory.get_provider("openai")
 
     # Test invalid provider returns None
     invalid_provider = SpeechProviderFactory.get_provider("invalid")
