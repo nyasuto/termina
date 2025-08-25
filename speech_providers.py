@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from openai import OpenAI
 from dotenv import load_dotenv
+from ffmpeg_processor import get_processor
 
 
 class SpeechProvider(ABC):
@@ -66,6 +67,12 @@ class OpenAIProvider(SpeechProvider):
 
         try:
             print(f"Starting OpenAI transcription for file: {audio_path}")
+
+            # Apply FFmpeg noise reduction if available
+            processor = get_processor()
+            if processor.ffmpeg_available and processor.noise_reduction_enabled:
+                print("Applying FFmpeg noise reduction before transcription...")
+                audio_path = processor.process_audio(audio_path)
 
             # Check if file exists and get its size
             if not os.path.exists(audio_path):
@@ -171,6 +178,12 @@ class WhisperCppProvider(SpeechProvider):
 
         try:
             print(f"Starting openai-whisper transcription for file: {audio_path}")
+
+            # Apply FFmpeg noise reduction if available
+            processor = get_processor()
+            if processor.ffmpeg_available and processor.noise_reduction_enabled:
+                print("Applying FFmpeg noise reduction before transcription...")
+                audio_path = processor.process_audio(audio_path)
 
             # Check if file exists
             if not os.path.exists(audio_path):
