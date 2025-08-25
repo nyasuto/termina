@@ -5,11 +5,10 @@ Provides AI-based noise reduction and audio enhancement using FFmpeg filters
 """
 
 import os
+import shutil
 import subprocess
 import tempfile
-import shutil
-from typing import Optional, Dict, Any
-from pathlib import Path
+from typing import Any, Optional
 
 
 class FFmpegAudioProcessor:
@@ -31,7 +30,7 @@ class FFmpegAudioProcessor:
             print("FFmpeg not found. Audio enhancement will be disabled.")
             return False
 
-    def _get_default_filters(self) -> Dict[str, Any]:
+    def _get_default_filters(self) -> dict[str, Any]:
         """Get default audio filter configuration"""
         return {
             "highpass": {
@@ -176,7 +175,7 @@ class FFmpegAudioProcessor:
         else:
             print(f"Unknown filter: {filter_name}")
 
-    def get_filter_status(self) -> Dict[str, Any]:
+    def get_filter_status(self) -> dict[str, Any]:
         """Get current filter configuration status"""
         return {
             "ffmpeg_available": self.ffmpeg_available,

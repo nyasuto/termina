@@ -6,21 +6,23 @@ Supports manual recording controls and global hotkeys (Cmd+Shift+V)
 """
 
 import os
-import tempfile
 import subprocess
+import tempfile
 import threading
+
 import rumps
-import sounddevice as sd
 import scipy.io.wavfile as wavfile
+import sounddevice as sd
 from dotenv import load_dotenv
 from pynput import keyboard
-from speech_providers import SpeechProviderFactory
+
 from ffmpeg_processor import get_processor
+from speech_providers import SpeechProviderFactory
 
 
 class TerminaApp(rumps.App):
     def __init__(self):
-        super(TerminaApp, self).__init__("🎤", quit_button=None)
+        super().__init__("🎤", quit_button=None)
 
         # Load environment variables from .env.local
         load_dotenv(".env.local")
@@ -189,7 +191,7 @@ class TerminaApp(rumps.App):
                 temp_path = temp_file.name
                 print(f"Saving audio to temporary file: {temp_path}")
                 wavfile.write(temp_path, self.sample_rate, audio_data)
-                print(f"Audio file saved successfully")
+                print("Audio file saved successfully")
 
             # Transcribe with Whisper
             print("Starting transcription...")

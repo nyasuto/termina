@@ -17,12 +17,14 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 
 機能構成	使用技術
 使用言語	Python 3.9以上
+パッケージ管理	uv (推奨) または pip
 メニューバーUI	rumps
 音声録音	sounddevice, scipy.io.wavfile
 音声認識	OpenAI Whisper API（openaiライブラリ）
 テキスト入力	osascript（AppleScript経由）
 環境変数管理	python-dotenv
 グローバルホットキー	pynput
+音声前処理	FFmpeg (ノイズ除去)
 
 
 ⸻
@@ -32,9 +34,17 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 ### 前提条件
 - macOS 10.14以上
 - Python 3.9以上
+- uv（推奨パッケージマネージャー） または pip
 - OpenAI APIキー（[OpenAI Platform](https://platform.openai.com/)で取得）
+- FFmpeg（音声前処理用、任意）
 - マイクアクセス許可
 - アクセシビリティアクセス許可（テキスト入力用）
+
+### FFmpegのインストール（任意、高精度音声認識用）
+```bash
+# Homebrewでインストール
+brew install ffmpeg
+```
 
 ### インストール手順
 
@@ -44,14 +54,23 @@ git clone https://github.com/your-username/termina.git
 cd termina
 ```
 
-2. **仮想環境を作成（推奨）**
+2. **uvをインストール（推奨）**
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+# macOSの場合
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# またはHomebrewを使用
+brew install uv
 ```
 
-3. **必要なライブラリをインストール**
+3. **依存関係をインストール**
 ```bash
+# uvを使用（推奨 - 高速でモダン）
+uv sync
+
+# または従来のpipを使用
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -76,6 +95,10 @@ SPEECH_PROVIDER=openai
 
 5. **アプリを実行**
 ```bash
+# uvを使用する場合
+uv run python termina.py
+
+# または従来の方法
 python termina.py
 ```
 
@@ -85,6 +108,10 @@ python termina.py
 
 1. **openai-whisperをインストール**
 ```bash
+# uvを使用する場合（推奨）
+uv add openai-whisper
+
+# または従来のpipを使用
 pip install openai-whisper
 ```
 
@@ -162,6 +189,53 @@ echo "SPEECH_PROVIDER=whisper_cpp" >> .env.local
 	5.	結果のテキストをクリップボード経由で現在アクティブなアプリケーションにペースト。
 
 ⸻
+
+## 🛠️ 開発者向け
+
+### 開発環境のセットアップ
+```bash
+# 開発用依存関係をインストール
+make dev-setup
+
+# または手動でインストール
+uv sync --group dev
+```
+
+### 開発用コマンド
+```bash
+# アプリを実行
+make run
+
+# コード品質チェック
+make quality
+
+# テストを実行
+make test
+
+# コードフォーマット
+make format
+
+# セキュリティチェック
+make security
+
+# 全てのチェックを実行
+make check
+
+# ヘルプを表示
+make help
+```
+
+### 従来のpip環境での開発
+```bash
+# 依存関係をインストール
+make pip-dev-install
+
+# アプリを実行
+make run-pip
+
+# 品質チェック
+make pip-quality
+```
 
 🧠 今後の改善予定
 	•	⚙️ ホットキーのカスタマイズ機能

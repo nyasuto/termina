@@ -4,12 +4,10 @@ Whisper Model Management for Termina
 Handles downloading and managing local Whisper models
 """
 
-import os
-import requests
-import hashlib
 from pathlib import Path
-from typing import Dict, Optional, Tuple
-from urllib.parse import urlparse
+from typing import Optional
+
+import requests
 
 
 class WhisperModelManager:
@@ -156,7 +154,7 @@ class WhisperModelManager:
                 model_path.unlink()
             return False
 
-    def get_available_models(self) -> Dict[str, Tuple[bool, int]]:
+    def get_available_models(self) -> dict[str, tuple[bool, int]]:
         """
         Get information about all models
 
@@ -164,7 +162,7 @@ class WhisperModelManager:
             Dict mapping model name to (is_downloaded, size_mb)
         """
         result = {}
-        for model_name, (url, hash, size_mb) in self.MODELS.items():
+        for model_name, (_url, _hash, size_mb) in self.MODELS.items():
             is_downloaded = self.is_model_downloaded(model_name)
             result[model_name] = (is_downloaded, size_mb)
         return result
@@ -189,7 +187,7 @@ class WhisperModelManager:
     def cleanup_models(self) -> int:
         """Remove any corrupted or invalid model files"""
         cleaned = 0
-        for model_name in self.MODELS.keys():
+        for model_name in self.MODELS:
             model_path = self.get_model_path(model_name)
             if model_path.exists() and not self._verify_model(model_name, model_path):
                 print(f"Removing corrupted model: {model_name}")

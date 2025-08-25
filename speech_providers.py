@@ -7,8 +7,10 @@ Abstracts different speech recognition backends (OpenAI API, whisper.cpp, etc.)
 import os
 from abc import ABC, abstractmethod
 from typing import Optional
-from openai import OpenAI
+
 from dotenv import load_dotenv
+from openai import OpenAI
+
 from ffmpeg_processor import get_processor
 
 
@@ -130,7 +132,10 @@ class WhisperCppProvider(SpeechProvider):
         """Check if local whisper is available"""
         try:
             # Check if openai-whisper is installed
-            import whisper
+            import importlib.util
+
+            if importlib.util.find_spec("whisper") is None:
+                raise ImportError("openai-whisper not installed")
 
             print("openai-whisper library available")
             return True
@@ -145,14 +150,13 @@ class WhisperCppProvider(SpeechProvider):
     def _load_model(self, model_name: Optional[str] = None) -> bool:
         """Load whisper model"""
         try:
-            import whisper
+            import whisper  # noqa: F401
 
             # Determine which model to use (prioritize accuracy over speed)
-            if model_name:
-                target_model = model_name
-            else:
-                # Use large model for best accuracy (if user has sufficient resources)
-                target_model = "large"  # Best accuracy, requires more memory/CPU
+            # Use large model for best accuracy (if user has sufficient resources)
+            target_model = (
+                model_name or "large"
+            )  # Best accuracy, requires more memory/CPU
 
             # Load the model if not already loaded
             if self._model_name != target_model:
