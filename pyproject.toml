@@ -1,0 +1,150 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "termina"
+version = "1.0.0"
+description = "macOS voice input application with AI-powered noise reduction"
+authors = [
+    {name = "Termina Contributors"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: MacOS X :: Cocoa",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    # Menu bar UI for macOS
+    "rumps>=0.4.0",
+    
+    # Audio recording
+    "sounddevice>=0.4.6",
+    
+    # Audio file processing  
+    "scipy>=1.11.0",
+    "numpy>=1.21.0",
+    
+    # OpenAI Whisper API client
+    "openai>=1.0.0",
+    
+    # Environment variable management
+    "python-dotenv>=1.0.0",
+    
+    # Global hotkey support
+    "pynput>=1.7.6",
+    
+    "requests>=2.25.0",  # For model downloading
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.0.0",
+    "pip-audit>=2.0.0",  # Modern alternative to safety
+]
+
+# Optional dependencies for local Whisper support
+local-whisper = [
+    "openai-whisper>=20231117",
+]
+
+[project.urls]
+Homepage = "https://github.com/nyasuto/termina"
+Repository = "https://github.com/nyasuto/termina.git"
+Issues = "https://github.com/nyasuto/termina/issues"
+
+[project.scripts]
+termina = "termina:main"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I",   # isort
+    "N",   # pep8-naming
+    "S",   # flake8-bandit (security)
+]
+ignore = [
+    "E203", # whitespace before ':'
+    "E501", # line too long (handled by formatter)
+    "S101", # Use of assert detected (allow in tests)
+    "S603", # subprocess call - known safe usage in our case
+    "S607", # Starting process with partial executable path - ffmpeg/osascript are system tools
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+exclude = [
+    "build/",
+    "dist/",
+    ".venv/",
+    "venv/",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101", "B601"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=. --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
