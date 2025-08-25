@@ -15,6 +15,7 @@ import scipy.io.wavfile as wavfile
 from dotenv import load_dotenv
 from pynput import keyboard
 from speech_providers import SpeechProviderFactory
+from ffmpeg_processor import get_processor
 
 
 class TerminaApp(rumps.App):
@@ -48,11 +49,13 @@ class TerminaApp(rumps.App):
             "Start Recording", callback=self.toggle_recording
         )
         self.provider_menu = self._create_provider_menu()
+        self.audio_settings_menu = self._create_audio_settings_menu()
 
         self.menu = [
             self.start_item,
             rumps.separator,
             self.provider_menu,
+            self.audio_settings_menu,
             rumps.separator,
             rumps.MenuItem("Hotkey: ⌘+H", callback=None),
             rumps.separator,
@@ -388,10 +391,12 @@ class TerminaApp(rumps.App):
 
         # Update menu to reflect new selection
         self.provider_menu = self._create_provider_menu()
+        self.audio_settings_menu = self._create_audio_settings_menu()
         self.menu = [
             self.start_item,
             rumps.separator,
             self.provider_menu,
+            self.audio_settings_menu,
             rumps.separator,
             rumps.MenuItem("Hotkey: ⌘+H", callback=None),
             rumps.separator,
@@ -452,6 +457,93 @@ class TerminaApp(rumps.App):
             rumps.notification(
                 "Termina", "Error", "Please switch to Local Whisper provider first"
             )
+
+    def _create_audio_settings_menu(self):
+        """Create audio settings menu including noise reduction"""
+        audio_menu = rumps.MenuItem("Audio Settings")
+        
+        # Get FFmpeg processor
+        processor = get_processor()
+        
+        # Noise reduction toggle
+        if processor.ffmpeg_available:
+            noise_reduction_title = "✓ Noise Reduction" if processor.noise_reduction_enabled else "○ Noise Reduction"
+            noise_reduction_item = rumps.MenuItem(
+                noise_reduction_title,
+                callback=self._toggle_noise_reduction
+            )
+            audio_menu.add(noise_reduction_item)
+            
+            # FFmpeg status
+            ffmpeg_status = rumps.MenuItem("FFmpeg: Available ✓", callback=None)
+            audio_menu.add(ffmpeg_status)
+            
+            # Advanced settings submenu
+            advanced_menu = rumps.MenuItem("Advanced Filters")
+            
+            # Individual filter toggles
+            for filter_name, filter_config in processor.filters.items():
+                filter_title = f"{'✓' if filter_config['enabled'] else '○'} {filter_name.replace('_', ' ').title()}"
+                filter_item = rumps.MenuItem(
+                    filter_title,
+                    callback=lambda sender, fn=filter_name: self._toggle_filter(fn)
+                )
+                advanced_menu.add(filter_item)
+            
+            audio_menu.add(rumps.separator)
+            audio_menu.add(advanced_menu)
+        else:
+            # FFmpeg not available
+            audio_menu.add(rumps.MenuItem("FFmpeg: Not Available ✗", callback=None))
+            audio_menu.add(rumps.MenuItem("Install FFmpeg: brew install ffmpeg", callback=None))
+        
+        return audio_menu
+    
+    def _toggle_noise_reduction(self, sender):
+        """Toggle noise reduction on/off"""
+        processor = get_processor()
+        processor.set_noise_reduction(not processor.noise_reduction_enabled)
+        
+        # Update menu
+        self.audio_settings_menu = self._create_audio_settings_menu()
+        self._update_menu()
+        
+        status = "enabled" if processor.noise_reduction_enabled else "disabled"
+        rumps.notification(
+            "Termina",
+            "Noise Reduction",
+            f"Noise reduction {status}"
+        )
+    
+    def _toggle_filter(self, filter_name):
+        """Toggle individual audio filter"""
+        processor = get_processor()
+        current_state = processor.filters[filter_name]["enabled"]
+        processor.configure_filter(filter_name, enabled=not current_state)
+        
+        # Update menu
+        self.audio_settings_menu = self._create_audio_settings_menu()
+        self._update_menu()
+        
+        status = "enabled" if not current_state else "disabled"
+        rumps.notification(
+            "Termina",
+            f"{filter_name.replace('_', ' ').title()}",
+            f"Filter {status}"
+        )
+    
+    def _update_menu(self):
+        """Update the main menu"""
+        self.menu = [
+            self.start_item,
+            rumps.separator,
+            self.provider_menu,
+            self.audio_settings_menu,
+            rumps.separator,
+            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.separator,
+            rumps.MenuItem("Quit", callback=rumps.quit_application),
+        ]
 
 
 def main():
