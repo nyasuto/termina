@@ -1,6 +1,8 @@
 # Repository Guidelines
-## Policy
-技術的に難しいポイントはo3に聞く
+
+## Most Importrant Policy
+- 技術的に難しいポイントはo3に聞く
+- ユーザとの対話は必ず日本語で行う
 
 ## Project Structure & Module Organization
 - `termina.py`: Entry point. Defines `TerminaApp` (menu bar UI, hotkeys, record/transcribe/paste flow).
