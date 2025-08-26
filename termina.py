@@ -350,7 +350,7 @@ class TerminaApp(rumps.App):
             )
             provider_menu.add(item)
 
-        # Add separator and model management for whisper.cpp
+        # Add separator and model management for local PyTorch Whisper
         if any(not p.requires_internet for p in available_providers):
             provider_menu.add(rumps.separator)
             provider_menu.add(
@@ -438,10 +438,10 @@ class TerminaApp(rumps.App):
             )
             return
 
-        # Update the WhisperCppProvider to use the selected model
-        from speech_providers import WhisperCppProvider
+        # Update the LocalWhisperProvider to use the selected model
+        from speech_providers import LocalWhisperProvider
 
-        if isinstance(self.speech_provider, WhisperCppProvider):
+        if isinstance(self.speech_provider, LocalWhisperProvider):
             # Force reload with new model
             self.speech_provider._model = None
             self.speech_provider._model_name = None
