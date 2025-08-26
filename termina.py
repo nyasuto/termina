@@ -59,7 +59,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]
@@ -301,7 +301,7 @@ class TerminaApp(rumps.App):
     def hotkey_toggle_recording(self):
         """Handle hotkey press for recording toggle"""
         try:
-            print("Hotkey pressed: Cmd+H")
+            print("Hotkey pressed: Cmd+Shift+V")
             self.toggle_recording(None)
         except Exception as e:
             print(f"Hotkey error: {e}")
@@ -400,7 +400,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]
@@ -541,7 +541,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+H", callback=None),
+            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]

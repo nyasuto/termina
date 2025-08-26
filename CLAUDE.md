@@ -119,7 +119,7 @@ SPEECH_PROVIDER=openai
 
 The application follows this workflow:
 1. Menu bar interface with microphone icon (🎤)
-2. User-controlled audio recording (start/stop manually or via ⌘+H hotkey)
+2. User-controlled audio recording (start/stop manually or via ⌘+Shift+V hotkey)
 3. Save audio to temporary `.wav` file with 16kHz sampling rate
 4. Send audio to configured speech provider for transcription:
    - **OpenAI Provider**: API call to Whisper API with Japanese language setting
@@ -273,7 +273,7 @@ When implementing new features or fixes:
 
 ## Future Enhancements
 
-- ✅ Global hotkey support (implemented: ⌘+H)
+- ✅ Global hotkey support (implemented: ⌘+Shift+V)
 - ✅ Offline Whisper support (implemented via openai-whisper)
 - 🔄 Dynamic recording duration with silence detection
 - 🔄 Command confirmation prompts
