@@ -10,17 +10,17 @@
 - `ffmpeg_processor.py`: Optional FFmpeg-based noise reduction and filters.
 - `whisper_models.py`: Local model metadata and management helpers.
 - `tests/`: Pytest suite (`test_*.py`).
-- Tooling: `pyproject.toml` (deps, ruff, pytest, mypy), `Makefile` (dev workflow), `.env.local` (secrets), `requirements.txt` (legacy/pip).
+- Tooling: `pyproject.toml` (deps, ruff, pytest, mypy), `Makefile` (dev workflow), `.env.local` (secrets).
 
 ## Build, Test, and Development Commands
 - `make dev-setup`: Sync deps (via `uv`); sets up dev env.
-- `make run` / `make run-pip`: Launch app with `uv` or system/pip env.
+- `make run`: Launch app with `uv`.
 - `make test`: Run pytest with coverage (term + xml + htmlcov).
 - `make lint` / `make lint-check`: Ruff lint/format (fix vs. check-only).
 - `make format`: Apply ruff formatter.
 - `make security`: Ruff security rules + `pip-audit`.
 - `make check`: Lockfile check, quality, tests.
-- Alternatives: `uv sync`, `uv run pytest -v`, or `make pip-*` targets.
+- Alternatives: `uv sync`, `uv run pytest -v`.
 
 ## Coding Style & Naming Conventions
 - Python 3.9+, 4-space indent, max line length 88, double quotes (ruff formatter).

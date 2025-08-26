@@ -563,7 +563,7 @@ def main():
                 "No speech recognition providers available.\n\n"
                 "Please configure:\n"
                 "• OpenAI API: Set OPENAI_API_KEY in .env.local\n"
-                "• Local Whisper: Run 'pip install openai-whisper'",
+                "• Local Whisper: Run 'uv add openai-whisper'",
             )
             return
 
