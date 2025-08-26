@@ -85,22 +85,21 @@ gh pr create
 - **HTTP Requests**: `requests` (for model downloading)
 - **Audio Processing**: `numpy`, `scipy`
 
-## Development Setup
+## Development Setup (uv)
 
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+# Install uv (if not installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Sync dependencies
+uv sync
 
 # Create environment configuration
 echo "OPENAI_API_KEY=your-openai-api-key-here" > .env.local
 echo "SPEECH_PROVIDER=openai" >> .env.local
 
 # Run the application
-python termina.py
+uv run python termina.py
 ```
 
 ### Environment Configuration
@@ -150,7 +149,7 @@ The application follows this workflow:
 
 ## Dependencies
 
-See `requirements.txt` for the complete list. Key dependencies include:
+See `pyproject.toml` for the complete list. Key dependencies include:
 
 ```
 rumps>=0.4.0                 # macOS menu bar UI

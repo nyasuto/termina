@@ -22,29 +22,19 @@ lock: ## Update lock file
 lock-check: ## Verify lock file is up to date
 	uv lock --check
 
-# Alternative pip-based installation (legacy)
-pip-install: ## Install dependencies using pip (fallback)
-	python -m pip install --upgrade pip
-	pip install -r requirements.txt
-
-pip-dev-install: ## Install development dependencies using pip (fallback)
-	python -m pip install --upgrade pip
-	pip install -r requirements.txt
-	pip install pytest pytest-cov ruff mypy pip-audit
+## NOTE: pip ベースの手順は廃止しました。uv に一本化しています。
 
 # Runtime commands
 run: ## Run the application
 	uv run python termina.py
 
-run-pip: ## Run the application using pip environment
-	python termina.py
+## NOTE: pip ベースの手順は廃止しました。uv に一本化しています。
 
 # Development and testing
 test: ## Run tests with coverage
 	uv run pytest --cov=. --cov-report=term-missing --cov-report=html
 
-test-pip: ## Run tests with coverage using pip
-	pytest --cov=. --cov-report=term-missing --cov-report=html
+## NOTE: pip ベースの手順は廃止しました。uv に一本化しています。
 
 # Code quality checks
 lint: ## Run ruff linter and formatter (recommended order)
@@ -106,10 +96,4 @@ quick-test: ## Run tests without coverage
 ci: check ## Alias for check - comprehensive CI pipeline
 	@echo "✅ CI checks completed!"
 
-# pip-based alternatives (legacy compatibility)
-pip-quality: ## Run quality checks using pip environment
-	ruff check .
-	ruff format --check .
-	ruff check --select=S .
-	pip-audit
-	@echo "ℹ️  Note: mypy type checking is disabled due to unresolved errors"
+## NOTE: pip ベースの手順は廃止しました。uv に一本化しています。

@@ -17,7 +17,7 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 
 機能構成	使用技術
 使用言語	Python 3.9以上
-パッケージ管理	uv (推奨) または pip
+パッケージ管理	uv（サポート対象）
 メニューバーUI	rumps
 音声録音	sounddevice, scipy.io.wavfile
 音声認識	OpenAI Whisper API（openaiライブラリ）
@@ -34,7 +34,7 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 ### 前提条件
 - macOS 10.14以上
 - Python 3.9以上
-- uv（推奨パッケージマネージャー） または pip
+- uv（推奨パッケージマネージャー）
 - OpenAI APIキー（[OpenAI Platform](https://platform.openai.com/)で取得）
 - FFmpeg（音声前処理用、任意）
 - マイクアクセス許可
@@ -46,7 +46,7 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 brew install ffmpeg
 ```
 
-### インストール手順
+### インストール手順（uv）
 
 1. **リポジトリをクローン**
 ```bash
@@ -65,13 +65,7 @@ brew install uv
 
 3. **依存関係をインストール**
 ```bash
-# uvを使用（推奨 - 高速でモダン）
 uv sync
-
-# または従来のpipを使用
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
 ```
 
 4. **音声認識プロバイダーを設定**
@@ -95,11 +89,7 @@ SPEECH_PROVIDER=openai
 
 5. **アプリを実行**
 ```bash
-# uvを使用する場合
 uv run python termina.py
-
-# または従来の方法
-python termina.py
 ```
 
 ### ローカルWhisper（オフライン音声認識）の使用
@@ -108,11 +98,7 @@ python termina.py
 
 1. **openai-whisperをインストール**
 ```bash
-# uvを使用する場合（推奨）
 uv add openai-whisper
-
-# または従来のpipを使用
-pip install openai-whisper
 ```
 
 2. **設定ファイルを更新**
@@ -225,17 +211,8 @@ make check
 make help
 ```
 
-### 従来のpip環境での開発
-```bash
-# 依存関係をインストール
-make pip-dev-install
-
-# アプリを実行
-make run-pip
-
-# 品質チェック
-make pip-quality
-```
+### 開発はuvで行います
+uv を使ったワークフローのみサポートします（pip 手順は廃止）。
 
 🧠 今後の改善予定
 	•	⚙️ ホットキーのカスタマイズ機能
