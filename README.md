@@ -83,8 +83,8 @@ echo "SPEECH_PROVIDER=openai" >> .env.local
 OPENAI_API_KEY=your-openai-api-key-here
 SPEECH_PROVIDER=openai
 
-# またはローカルWhisper使用（オフライン）
-# SPEECH_PROVIDER=whisper_cpp
+# またはローカルWhisper使用（オフライン, PyTorch）
+# SPEECH_PROVIDER=local
 ```
 
 5. **アプリを実行**
@@ -92,7 +92,7 @@ SPEECH_PROVIDER=openai
 uv run python termina.py
 ```
 
-### ローカルWhisper（オフライン音声認識）の使用
+### ローカルWhisper（PyTorch, オフライン音声認識）の使用
 
 インターネット不要でプライバシーを重視する場合：
 
@@ -101,9 +101,9 @@ uv run python termina.py
 uv add openai-whisper
 ```
 
-2. **設定ファイルを更新**
+2. **設定ファイルを更新**（プロバイダキーを `local` に統一）
 ```bash
-echo "SPEECH_PROVIDER=whisper_cpp" >> .env.local
+echo "SPEECH_PROVIDER=local" >> .env.local
 ```
 
 3. **初回使用時にモデル自動ダウンロード**

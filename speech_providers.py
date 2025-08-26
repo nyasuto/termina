@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Speech Recognition Providers for Termina
-Abstracts different speech recognition backends (OpenAI API, whisper.cpp, etc.)
+Abstracts different speech recognition backends (OpenAI API, local PyTorch Whisper)
 """
 
 import os
@@ -120,8 +120,8 @@ class OpenAIProvider(SpeechProvider):
         return True
 
 
-class WhisperCppProvider(SpeechProvider):
-    """Local openai-whisper provider"""
+class LocalWhisperProvider(SpeechProvider):
+    """Local Whisper (PyTorch/openai-whisper) provider"""
 
     def __init__(self):
         self._model = None
@@ -322,12 +322,12 @@ class WhisperCppProvider(SpeechProvider):
             return None
 
     def is_available(self) -> bool:
-        """Check if whisper.cpp is available"""
+        """Check if local openai-whisper is available"""
         return self._available
 
     @property
     def name(self) -> str:
-        return f"Local Whisper ({self._model_name or 'openai-whisper'})"
+        return f"Local Whisper (PyTorch) — {self._model_name or 'auto'}"
 
     @property
     def requires_internet(self) -> bool:
@@ -343,7 +343,7 @@ class SpeechProviderFactory:
         Get speech provider by name or auto-detect best available
 
         Args:
-            provider_name: Name of provider ('openai', 'whisper_cpp', or None for auto)
+            provider_name: Name of provider ('openai', 'local', or None for auto)
 
         Returns:
             SpeechProvider instance or None if no provider available
@@ -356,10 +356,10 @@ class SpeechProviderFactory:
                 openai_provider = OpenAIProvider()
                 if openai_provider.is_available():
                     return openai_provider
-            elif provider_name.lower() == "whisper_cpp":
-                whisper_provider = WhisperCppProvider()
-                if whisper_provider.is_available():
-                    return whisper_provider
+            elif provider_name.lower() == "local":
+                local_provider = LocalWhisperProvider()
+                if local_provider.is_available():
+                    return local_provider
             print(f"Requested provider '{provider_name}' not available")
             return None
 
@@ -371,14 +371,14 @@ class SpeechProviderFactory:
             if openai_provider.is_available():
                 print(f"Using configured provider: {openai_provider.name}")
                 return openai_provider
-        elif provider_name_env == "whisper_cpp":
-            whisper_provider = WhisperCppProvider()
-            if whisper_provider.is_available():
-                print(f"Using configured provider: {whisper_provider.name}")
-                return whisper_provider
+        elif provider_name_env == "local":
+            local_provider = LocalWhisperProvider()
+            if local_provider.is_available():
+                print(f"Using configured provider: {local_provider.name}")
+                return local_provider
 
         # Fallback: try providers in order of preference
-        providers = [OpenAIProvider(), WhisperCppProvider()]
+        providers = [OpenAIProvider(), LocalWhisperProvider()]
 
         for provider in providers:
             if provider.is_available():
@@ -391,5 +391,5 @@ class SpeechProviderFactory:
     @staticmethod
     def get_available_providers() -> list[SpeechProvider]:
         """Get list of all available providers"""
-        providers = [OpenAIProvider(), WhisperCppProvider()]
+        providers = [OpenAIProvider(), LocalWhisperProvider()]
         return [p for p in providers if p.is_available()]

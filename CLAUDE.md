@@ -112,7 +112,7 @@ OPENAI_API_KEY=your-openai-api-key-here
 SPEECH_PROVIDER=openai
 
 # OR use local Whisper (offline, no API key needed)
-# SPEECH_PROVIDER=whisper_cpp
+# SPEECH_PROVIDER=local
 ```
 
 ## Architecture
@@ -131,7 +131,7 @@ The application follows this workflow:
 - **`termina.py`**: Main application entry point and menu bar interface
 - **`speech_providers.py`**: Speech recognition provider implementations
   - `OpenAIProvider`: OpenAI Whisper API integration
-  - `WhisperCppProvider`: Local openai-whisper integration
+  - `LocalWhisperProvider`: Local openai-whisper (PyTorch) integration
   - `SpeechProviderFactory`: Provider selection and management
 - **`whisper_models.py`**: Local Whisper model management and downloading
 

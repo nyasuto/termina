@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Whisper Model Management for Termina
-Handles downloading and managing local Whisper models
+Handles downloading and managing local whisper.cpp (ggml) models.
+
+Note:
+- The active offline provider uses openai-whisper (PyTorch) and does not
+  consume these ggml models. This module is retained for potential future
+  whisper.cpp integration and developer tooling.
 """
 
 from pathlib import Path
