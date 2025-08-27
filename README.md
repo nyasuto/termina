@@ -120,10 +120,12 @@ mv Termina.app /Applications/
 
 #### 方法3: LaunchAgent（上級者向け）
 ```bash
-# LaunchAgentをインストール
-cp scripts/com.termina.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.termina.plist
+# LaunchAgentをインストール（動的パス解決）
+./scripts/install_launch_agent.sh
 ```
+
+> **注意**: 以前のバージョンのハードコードされたplistファイルは使用しないでください。  
+> 新しいインストールスクリプトが自動的に適切なパスを設定します。
 
 ### 初回実行時の設定
 
