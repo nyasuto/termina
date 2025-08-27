@@ -11,6 +11,12 @@ RESOURCES_DIR="${CONTENTS_DIR}/Resources"
 mkdir -p "${MACOS_DIR}"
 mkdir -p "${RESOURCES_DIR}"
 
+# Copy icon if available
+if [ -f "icons/termina_cute.icns" ]; then
+    cp "icons/termina_cute.icns" "${RESOURCES_DIR}/termina.icns"
+    echo "📱 Added cute icon to app bundle"
+fi
+
 # Create Info.plist
 cat > "${CONTENTS_DIR}/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -31,6 +37,8 @@ cat > "${CONTENTS_DIR}/Info.plist" << EOF
     <string>6.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>termina</string>
     <key>LSBackgroundOnly</key>
     <false/>
     <key>LSUIElement</key>
@@ -44,7 +52,27 @@ EOF
 # Create executable script
 cat > "${MACOS_DIR}/termina" << EOF
 #!/bin/bash
-cd "\$(dirname "\$0")/../../../"
+# Prevent multiple instances
+PIDFILE="/tmp/termina.pid"
+if [ -f "\$PIDFILE" ] && kill -0 \$(cat "\$PIDFILE") 2>/dev/null; then
+    echo "Termina is already running"
+    exit 0
+fi
+echo \$\$ > "\$PIDFILE"
+
+# Cleanup on exit
+trap 'rm -f "\$PIDFILE"; exit' INT TERM EXIT
+
+# Change to the termina project directory
+cd "/Users/yast/git/termina" || exit 1
+
+# Check if uv is available
+if ! command -v uv >/dev/null 2>&1; then
+    # Try homebrew path
+    export PATH="/opt/homebrew/bin:\$PATH"
+fi
+
+# Run Termina
 uv run python termina.py
 EOF
 
