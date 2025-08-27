@@ -63,8 +63,13 @@ echo \$\$ > "\$PIDFILE"
 # Cleanup on exit
 trap 'rm -f "\$PIDFILE"; exit' INT TERM EXIT
 
-# Change to the termina project directory
-cd "/Users/yast/git/termina" || exit 1
+# Change to the termina project directory (dynamic resolution)
+# For app bundle, we need to resolve the project directory properly
+# App bundle structure: Termina.app/Contents/MacOS/termina
+SCRIPT_DIR="\$(cd "\$(dirname "\$0")" && pwd)"
+# Go up 3 levels: MacOS -> Contents -> Termina.app -> project root
+PROJECT_DIR="\$(dirname "\$(dirname "\$(dirname "\$SCRIPT_DIR")")")"
+cd "\$PROJECT_DIR" || exit 1
 
 # Check if uv is available
 if ! command -v uv >/dev/null 2>&1; then
