@@ -100,6 +100,31 @@ uv run python termina.py
 ```
 
 
+### アプリ常駐化（自動起動）
+
+#### 方法1: App Bundle（推奨）
+```bash
+# App bundleを作成
+./scripts/create_app_bundle.sh
+
+# Applicationsフォルダに移動
+mv Termina.app /Applications/
+
+# システム設定で自動起動設定
+# System Preferences → Users & Groups → Login Items → "+"
+```
+
+#### 方法2: 簡単起動
+- `start_termina.command`をダブルクリックで起動
+- Dockに追加して素早くアクセス
+
+#### 方法3: LaunchAgent（上級者向け）
+```bash
+# LaunchAgentをインストール
+cp scripts/com.termina.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.termina.plist
+```
+
 ### 初回実行時の設定
 
 初回実行時には以下の許可が必要になる場合があります：
