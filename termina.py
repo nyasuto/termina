@@ -42,8 +42,10 @@ class TerminaApp(rumps.App):
         self.recording_thread = None
         self.recording_start_time = None
 
-        # Hotkey settings
+        # Hotkey settings - Cmd double tap
         self.hotkey_listener = None
+        self.cmd_press_times = []  # Track Cmd key press times
+        self.cmd_double_tap_timeout = 0.5  # 500ms timeout for double tap
         self.setup_hotkeys()
 
         # Menu items
@@ -59,7 +61,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
+            rumps.MenuItem("Hotkey: ⌘⌘ (double tap)", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]
@@ -281,15 +283,16 @@ class TerminaApp(rumps.App):
             rumps.notification("Termina", "Error", f"Paste failed: {str(e)}")
 
     def setup_hotkeys(self):
-        """Setup global hotkeys"""
+        """Setup global hotkeys for Cmd double tap"""
         try:
-            print("Setting up global hotkeys...")
-            # Define hotkey combination: Cmd+Shift+V
-            self.hotkey_listener = keyboard.GlobalHotKeys(
-                {"<cmd>+<shift>+v": self.hotkey_toggle_recording}
+            print("Setting up global hotkeys for Cmd double tap...")
+
+            # Use keyboard listener for individual key events
+            self.hotkey_listener = keyboard.Listener(
+                on_press=self.on_key_press, on_release=self.on_key_release
             )
             self.hotkey_listener.start()
-            print("Global hotkeys initialized: Cmd+Shift+V")
+            print("Global hotkeys initialized: Cmd double tap")
         except Exception as e:
             print(f"Failed to setup hotkeys: {e}")
             rumps.notification(
@@ -298,10 +301,47 @@ class TerminaApp(rumps.App):
                 "Failed to setup global hotkeys. Check accessibility permissions.",
             )
 
-    def hotkey_toggle_recording(self):
-        """Handle hotkey press for recording toggle"""
+    def on_key_press(self, key):
+        """Handle key press events"""
+        # We only care about releases for double tap detection
+        pass
+
+    def on_key_release(self, key):
+        """Handle key release events for Cmd double tap"""
         try:
-            print("Hotkey pressed: Cmd+Shift+V")
+            import time
+
+            # Check if it's a Cmd key (left or right)
+            if key in [keyboard.Key.cmd, keyboard.Key.cmd_r]:
+                current_time = time.time()
+                print(f"Cmd key released at {current_time}")
+
+                # Add current time to press history
+                self.cmd_press_times.append(current_time)
+
+                # Clean old press times (older than timeout)
+                cutoff_time = current_time - self.cmd_double_tap_timeout
+                self.cmd_press_times = [
+                    t for t in self.cmd_press_times if t > cutoff_time
+                ]
+
+                # Check for double tap (2 releases within timeout)
+                if len(self.cmd_press_times) >= 2:
+                    time_diff = self.cmd_press_times[-1] - self.cmd_press_times[-2]
+                    print(f"Cmd double tap detected! Time difference: {time_diff:.3f}s")
+
+                    if time_diff <= self.cmd_double_tap_timeout:
+                        # Clear press times to prevent multiple triggers
+                        self.cmd_press_times = []
+                        self.hotkey_toggle_recording()
+
+        except Exception as e:
+            print(f"Key release error: {e}")
+
+    def hotkey_toggle_recording(self):
+        """Handle hotkey trigger for recording toggle"""
+        try:
+            print("Hotkey triggered: Cmd double tap")
             self.toggle_recording(None)
         except Exception as e:
             print(f"Hotkey error: {e}")
@@ -443,7 +483,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
+            rumps.MenuItem("Hotkey: ⌘⌘ (double tap)", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]
@@ -660,7 +700,7 @@ class TerminaApp(rumps.App):
             self.provider_menu,
             self.audio_settings_menu,
             rumps.separator,
-            rumps.MenuItem("Hotkey: ⌘+Shift+V", callback=None),
+            rumps.MenuItem("Hotkey: ⌘⌘ (double tap)", callback=None),
             rumps.separator,
             rumps.MenuItem("Quit", callback=rumps.quit_application),
         ]
