@@ -52,3 +52,10 @@ config.json
 .coverage
 coverage.xml
 htmlcov/
+
+# Whisper models (large binary files)
+whisper_models/
+*.bin
+
+.serena
+

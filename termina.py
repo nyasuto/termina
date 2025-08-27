@@ -319,7 +319,7 @@ class TerminaApp(rumps.App):
 
     def _create_provider_menu(self):
         """Create speech provider selection menu"""
-        from speech_providers import SpeechProviderFactory
+        from speech_providers import FFmpegWhisperProvider, SpeechProviderFactory
 
         provider_menu = rumps.MenuItem("Speech Provider")
 
@@ -337,7 +337,7 @@ class TerminaApp(rumps.App):
 
         for provider in available_providers:
             is_current = provider.name == current_provider_name
-            menu_title = f"● {provider.name}" if is_current else f"○ {provider.name}"
+            menu_title = f"◉ {provider.name}" if is_current else f"○ {provider.name}"
 
             # Add internet requirement indicator
             if provider.requires_internet:
@@ -350,31 +350,74 @@ class TerminaApp(rumps.App):
             )
             provider_menu.add(item)
 
-        # Add separator and model management for local PyTorch Whisper
+        # Add separator and model management
         if any(not p.requires_internet for p in available_providers):
             provider_menu.add(rumps.separator)
             provider_menu.add(
                 rumps.MenuItem("Manage Local Models...", callback=self._manage_models)
             )
 
-            # Add model size selection for local whisper
-            model_menu = rumps.MenuItem("Select Model Size")
-            model_sizes = [
-                ("tiny", "Tiny (39MB) - Fastest"),
-                ("base", "Base (142MB) - Balanced"),
-                ("small", "Small (466MB) - Good"),
-                ("medium", "Medium (1.5GB) - Better"),
-                ("large", "Large (3.1GB) - Best Accuracy"),
+            # Add whisper.cpp model selection if available
+            ffmpeg_providers = [
+                p for p in available_providers if isinstance(p, FFmpegWhisperProvider)
             ]
+            if ffmpeg_providers:
+                whisper_cpp_menu = rumps.MenuItem("Whisper.cpp Models")
 
-            for model_name, description in model_sizes:
-                model_item = rumps.MenuItem(
-                    description,
-                    callback=lambda sender, model=model_name: self._select_model(model),
+                # Get available models
+                ffmpeg_provider = ffmpeg_providers[0]
+                available_models = ffmpeg_provider.get_available_models()
+
+                if available_models:
+                    for model_name in available_models:
+                        is_selected = (
+                            isinstance(self.speech_provider, FFmpegWhisperProvider)
+                            and self.speech_provider._model_name == model_name
+                        )
+                        title = f"◉ {model_name}" if is_selected else f"○ {model_name}"
+
+                        model_item = rumps.MenuItem(
+                            title,
+                            callback=lambda sender,
+                            model=model_name: self._select_whisper_cpp_model(model),
+                        )
+                        whisper_cpp_menu.add(model_item)
+                else:
+                    whisper_cpp_menu.add(
+                        rumps.MenuItem("No models available", callback=None)
+                    )
+
+                whisper_cpp_menu.add(rumps.separator)
+                whisper_cpp_menu.add(
+                    rumps.MenuItem(
+                        "Download Models...", callback=self._download_whisper_cpp_model
+                    )
                 )
-                model_menu.add(model_item)
 
-            provider_menu.add(model_menu)
+                provider_menu.add(whisper_cpp_menu)
+
+            # Add model size selection for local PyTorch whisper
+            pytorch_providers = [p for p in available_providers if "PyTorch" in p.name]
+            if pytorch_providers:
+                model_menu = rumps.MenuItem("PyTorch Model Size")
+                model_sizes = [
+                    ("tiny", "Tiny (39MB) - Fastest"),
+                    ("base", "Base (142MB) - Balanced"),
+                    ("small", "Small (466MB) - Good"),
+                    ("medium", "Medium (1.5GB) - Better"),
+                    ("large", "Large (3.1GB) - Best Accuracy"),
+                ]
+
+                for model_name, description in model_sizes:
+                    model_item = rumps.MenuItem(
+                        description,
+                        callback=lambda sender, model=model_name: self._select_model(
+                            model
+                        ),
+                    )
+                    model_menu.add(model_item)
+
+                provider_menu.add(model_menu)
 
         return provider_menu
 
@@ -414,16 +457,42 @@ class TerminaApp(rumps.App):
 
     def _manage_models(self, _):
         """Show model management dialog"""
-        # Build info message
-        info_lines = ["Local Whisper Models:\n"]
+        from speech_providers import FFmpegWhisperProvider
 
-        # Available openai-whisper models
+        # Check if we have a whisper.cpp provider
+        has_ffmpeg_provider = any(
+            isinstance(p, FFmpegWhisperProvider)
+            for p in SpeechProviderFactory.get_available_providers()
+        )
+
+        info_lines = ["Termina Model Management\n"]
+
+        if has_ffmpeg_provider:
+            info_lines.append("🚀 FFmpeg + Whisper.cpp Models:")
+            # Get available models from the provider
+            ffmpeg_provider = FFmpegWhisperProvider()
+            available_models = ffmpeg_provider.get_available_models()
+
+            if available_models:
+                for model in available_models:
+                    info_lines.append(f"  ✅ {model}")
+            else:
+                info_lines.append("  ⬜ No models downloaded")
+
+            info_lines.append("\nTo download models:")
+            info_lines.append(
+                "  python download_whisper_models.py download <model_name>"
+            )
+            info_lines.append("  Available: tiny, base, small, medium, large-v3\n")
+
+        # OpenAI Whisper (PyTorch) models
+        info_lines.append("🐍 Local Whisper (PyTorch) Models:")
         models = ["tiny", "base", "small", "medium", "large"]
         for model_name in models:
-            info_lines.append(f"{model_name}: Auto-downloaded when first used")
+            info_lines.append(f"  {model_name}: Auto-downloaded when first used")
 
-        info_lines.append("\nModels are automatically downloaded and cached")
-        info_lines.append("when first selected for use.\n")
+        info_lines.append("\nPyTorch models are automatically downloaded and cached")
+        info_lines.append("when first selected for use.")
         info_lines.append("Cache location: ~/.cache/whisper/")
 
         rumps.alert("Model Management", "\n".join(info_lines))
@@ -459,6 +528,56 @@ class TerminaApp(rumps.App):
             rumps.notification(
                 "Termina", "Error", "Please switch to Local Whisper provider first"
             )
+
+    def _select_whisper_cpp_model(self, model_name):
+        """Select a whisper.cpp model"""
+        from speech_providers import FFmpegWhisperProvider
+
+        if self.is_recording:
+            rumps.notification(
+                "Termina",
+                "Cannot Switch",
+                "Please stop recording before changing model",
+            )
+            return
+
+        if isinstance(self.speech_provider, FFmpegWhisperProvider):
+            if self.speech_provider.set_model(model_name):
+                rumps.notification(
+                    "Termina",
+                    "Model Changed",
+                    f"Switched to whisper.cpp {model_name} model",
+                )
+
+                # Update menu to reflect change
+                self.provider_menu = self._create_provider_menu()
+                self._update_menu()
+            else:
+                rumps.notification(
+                    "Termina", "Error", f"Failed to load whisper.cpp {model_name} model"
+                )
+        else:
+            rumps.notification(
+                "Termina", "Error", "Please switch to FFmpeg Whisper provider first"
+            )
+
+    def _download_whisper_cpp_model(self, _):
+        """Show model download dialog"""
+        # Show available models for download
+        models_info = [
+            "Available Whisper.cpp Models:\n",
+            "tiny (39MB) - Fastest, lowest accuracy",
+            "base (142MB) - Good balance",
+            "small (466MB) - Better accuracy",
+            "medium (1.5GB) - High accuracy",
+            "large-v3 (2.9GB) - Highest accuracy\n",
+            "To download a model, run in Terminal:",
+            "python download_whisper_models.py download <model_name>\n",
+            "Example:",
+            "python download_whisper_models.py download base",
+        ]
+
+        rumps.alert("Download Whisper.cpp Models", "\n".join(models_info))
 
     def _create_audio_settings_menu(self):
         """Create audio settings menu including noise reduction"""

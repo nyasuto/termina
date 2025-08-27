@@ -1,6 +1,6 @@
 🎤 Termina（Mac用音声入力アプリ）
 
-TerminaはPythonで作られたmacOSのメニューバー常駐アプリです。音声入力を取得し、OpenAIのWhisper APIで文字起こしを行い、その結果を現在アクティブなアプリケーションにテキストとしてペーストします。
+TerminaはPythonで作られたmacOSのメニューバー常駐アプリです。音声入力を取得し、AI音声認識で文字起こしを行い、その結果を現在アクティブなアプリケーションにテキストとしてペーストします。
 
 ⸻
 
@@ -8,8 +8,12 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 	•	メニューバーアイコンから音声コントロール
 	•	手動録音開始・停止（任意の長さで録音可能）
 	•	音声から変換されたテキストを現在のアクティブアプリにペースト
-	•	OpenAI Whisper APIを利用した日本語音声認識
+	•	**3つの音声認識プロバイダー対応**：
+	  - 🚀 **FFmpeg + Whisper.cpp**（超高速・完全ローカル・GPU対応）
+	  - 🌐 **OpenAI Whisper API**（高精度・クラウド）
+	  - 💻 **Local Whisper (PyTorch)**（オフライン・中程度）
 	•	グローバルホットキー対応（⌘+Shift+V で録音開始・停止）
+	•	高度な音声前処理（FFmpeg統合ノイズ除去）
 
 ⸻
 
@@ -20,7 +24,7 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 パッケージ管理	uv（サポート対象）
 メニューバーUI	rumps
 音声録音	sounddevice, scipy.io.wavfile
-音声認識	OpenAI Whisper API（openaiライブラリ）
+音声認識	OpenAI Whisper API・whisper.cpp・openai-whisper
 テキスト入力	osascript（AppleScript経由）
 環境変数管理	python-dotenv
 グローバルホットキー	pynput
@@ -35,16 +39,20 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 - macOS 10.14以上
 - Python 3.9以上
 - uv（推奨パッケージマネージャー）
-- OpenAI APIキー（[OpenAI Platform](https://platform.openai.com/)で取得）
-- FFmpeg（音声前処理用、任意）
 - マイクアクセス許可
 - アクセシビリティアクセス許可（テキスト入力用）
 
-### FFmpegのインストール（任意、高精度音声認識用）
+### 🚀 推奨：FFmpeg + Whisper.cpp（超高速ローカル音声認識）
 ```bash
-# Homebrewでインストール
-brew install ffmpeg
+# FFmpeg 8.0 と whisper.cpp をインストール
+brew install ffmpeg whisper-cpp
+
+# Whisperモデルをダウンロード（例：base モデル）
+python download_whisper_models.py download base
 ```
+
+### オプション設定
+**OpenAI APIキー**（クラウド音声認識用・オプション）：[OpenAI Platform](https://platform.openai.com/)で取得
 
 ### インストール手順（uv）
 
@@ -133,28 +141,51 @@ echo "SPEECH_PROVIDER=local" >> .env.local
 - **⌘+Shift+V**: 録音の開始・停止を切り替え
 - どのアプリからでもホットキーで録音をコントロール可能
 
-#### 音声認識プロバイダーの切り替え
-- メニューバー > Speech Provider で切り替え可能
-- 🌐 = インターネット必要、💻 = オフライン利用可能
+#### 🎯 音声認識プロバイダーの選択
 
-| プロバイダー | 精度 | 速度 | オフライン | コスト | 初期サイズ |
-|-------------|------|------|-----------|--------|-----------|
-| OpenAI API 🌐 | 最高 | 高速 | ❌ | 従量課金 | 0MB |
-| Local Whisper 💻 | 高い | 高速 | ✅ | 無料 | 3.1GB |
+メニューバー > Speech Provider で切り替え可能
 
-#### ローカルWhisperモデルサイズと精度
+| プロバイダー | 精度 | 速度 | GPU加速 | オフライン | コスト | 推奨用途 |
+|-------------|------|------|---------|----------|--------|----------|
+| 🚀 **FFmpeg + Whisper.cpp** | **最高** | **超高速** | ✅ Metal | ✅ | **無料** | **日常使用・高頻度** |
+| 🌐 **OpenAI API** | 最高 | 高速 | - | ❌ | 従量課金 | たまに使用・最高精度 |
+| 💻 **Local Whisper (PyTorch)** | 高い | 中速 | ❌ | ✅ | 無料 | 学習・実験用 |
 
-メニューバー > Speech Provider > Select Model Size から選択可能：
+#### 🚀 Whisper.cpp モデル管理
+
+**モデルダウンロード**:
+```bash
+# 推奨：バランス重視
+python download_whisper_models.py download base
+
+# 利用可能なモデル一覧
+python download_whisper_models.py list
+
+# 全モデルダウンロード
+python download_whisper_models.py download-all
+```
+
+**モデル選択**: メニューバー > Speech Provider > Whisper.cpp Models
+
+| モデル | サイズ | 精度 | GPU速度 | CPU速度 | 推奨用途 |
+|--------|--------|------|---------|---------|----------|
+| **tiny** | 39MB | ★★☆ | 超高速 | 高速 | テスト・軽量 |
+| **base** | 142MB | ★★★ | 高速 | 普通 | **推奨・日常** |
+| **small** | 466MB | ★★★★ | 普通 | やや遅い | 高品質 |
+| **medium** | 1.5GB | ★★★★ | やや遅い | 遅い | 精度重視 |
+| **large-v3** | 2.9GB | ★★★★★ | 遅い | 最遅 | 最高精度 |
+
+#### 💻 PyTorch Whisper モデル（自動ダウンロード）
+
+メニューバー > Speech Provider > PyTorch Model Size から選択：
 
 | モデル | サイズ | 精度 | 速度 | 推奨用途 |
 |--------|--------|------|------|----------|
-| tiny | 39MB | 低い | 最高速 | テスト・軽量環境 |
-| base | 142MB | 普通 | 高速 | バランス重視 |
+| tiny | 39MB | 低い | 最高速 | テスト・実験 |
+| base | 142MB | 普通 | 高速 | バランス |
 | small | 466MB | 良い | 普通 | 一般用途 |
 | medium | 1.5GB | 高い | やや遅い | 精度重視 |
-| large | 3.1GB | 最高 | 最遅い | 最高精度（デフォルト） |
-
-**注意**: デフォルトで`large`モデルを使用します（最高精度）。メモリ不足の場合は小さなモデルを選択してください。
+| large | 3.1GB | 最高 | 遅い | 最高精度 |
 
 ### トラブルシューティング
 
