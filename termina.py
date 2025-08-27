@@ -5,10 +5,12 @@ Records audio, transcribes with OpenAI Whisper, and pastes text to active applic
 Supports manual recording controls and global hotkeys (Cmd+Shift+V)
 """
 
+import json
 import os
 import subprocess
 import tempfile
 import threading
+from pathlib import Path
 
 import rumps
 import scipy.io.wavfile as wavfile
@@ -27,6 +29,10 @@ class TerminaApp(rumps.App):
         # Load environment variables from .env.local
         load_dotenv(".env.local")
 
+        # Initialize configuration
+        self.config_file = Path.home() / ".termina_config.json"
+        self.config = self._load_config()
+
         # Initialize speech recognition provider
         self.speech_provider = SpeechProviderFactory.get_provider()
         if not self.speech_provider:
@@ -34,6 +40,9 @@ class TerminaApp(rumps.App):
                 "Termina Setup Error",
                 "No speech recognition provider available. Please check your configuration.",
             )
+
+        # Apply saved model preferences
+        self._apply_saved_preferences()
 
         # Recording settings (use 16kHz for Whisper compatibility)
         self.sample_rate = 16000
@@ -496,46 +505,251 @@ class TerminaApp(rumps.App):
         print(f"Switched speech provider from {old_name} to {new_provider.name}")
 
     def _manage_models(self, _):
-        """Show model management dialog"""
+        """Show interactive model management dialog"""
         from speech_providers import FFmpegWhisperProvider
 
         # Check if we have a whisper.cpp provider
-        has_ffmpeg_provider = any(
-            isinstance(p, FFmpegWhisperProvider)
-            for p in SpeechProviderFactory.get_available_providers()
+        ffmpeg_provider = None
+        for provider in SpeechProviderFactory.get_available_providers():
+            if isinstance(provider, FFmpegWhisperProvider):
+                ffmpeg_provider = provider
+                break
+
+        if not ffmpeg_provider:
+            # Create provider instance to check models even if not fully available
+            ffmpeg_provider = FFmpegWhisperProvider()
+
+        self._show_model_management_window(ffmpeg_provider)
+
+    def _show_model_management_window(self, provider):
+        """Show interactive model management window with download options"""
+        from download_whisper_models import MODELS
+
+        # Get currently available models
+        available_models = provider.get_available_models()
+        current_model = provider._model_name if provider._available else None
+
+        # Create status overview
+        status_lines = ["🤖 Whisper.cpp Model Management\n"]
+
+        if available_models:
+            status_lines.append("✅ Downloaded Models:")
+            for model in available_models:
+                marker = "🎯" if model == current_model else "  "
+                status_lines.append(f"{marker} {model}")
+            status_lines.append("")
+        else:
+            status_lines.append("⬜ No models downloaded yet\n")
+
+        # Show available models for download
+        status_lines.append("📥 Available for Download:")
+        for model_name, info in MODELS.items():
+            if model_name not in available_models:
+                status_lines.append(
+                    f"  • {model_name} ({info['size_mb']}MB) - {info['description']}"
+                )
+
+        status_lines.append("\n" + "=" * 50)
+        status_lines.append("Choose an action:")
+        status_lines.append("1. Download a model")
+        status_lines.append("2. Switch active model")
+        status_lines.append("3. View model details")
+
+        # Show status dialog with options
+        response = rumps.alert(
+            "Model Management",
+            "\n".join(status_lines),
+            ok="Download Model",
+            cancel="Close",
+            other="Switch Model",
         )
 
-        info_lines = ["Termina Model Management\n"]
+        if response == 1:  # OK = Download
+            self._show_download_dialog(provider)
+        elif response == 0:  # Other = Switch
+            self._show_model_selection_dialog(provider, available_models)
 
-        if has_ffmpeg_provider:
-            info_lines.append("🚀 FFmpeg + Whisper.cpp Models:")
-            # Get available models from the provider
-            ffmpeg_provider = FFmpegWhisperProvider()
-            available_models = ffmpeg_provider.get_available_models()
+    def _show_download_dialog(self, provider):
+        """Show model download selection dialog"""
+        from download_whisper_models import MODELS
 
-            if available_models:
-                for model in available_models:
-                    info_lines.append(f"  ✅ {model}")
-            else:
-                info_lines.append("  ⬜ No models downloaded")
+        available_models = provider.get_available_models()
+        downloadable_models = {
+            name: info for name, info in MODELS.items() if name not in available_models
+        }
 
-            info_lines.append("\nTo download models:")
-            info_lines.append(
-                "  python download_whisper_models.py download <model_name>"
+        if not downloadable_models:
+            rumps.alert("Download Models", "All models are already downloaded!")
+            return
+
+        # Create download options
+        options = []
+        for model_name, info in downloadable_models.items():
+            options.append(
+                f"{model_name} ({info['size_mb']}MB) - {info['description']}"
             )
-            info_lines.append("  Available: tiny, base, small, medium, large-v3\n")
 
-        # OpenAI Whisper (PyTorch) models
-        info_lines.append("🐍 Local Whisper (PyTorch) Models:")
-        models = ["tiny", "base", "small", "medium", "large"]
-        for model_name in models:
-            info_lines.append(f"  {model_name}: Auto-downloaded when first used")
+        # Show selection dialog
+        if len(options) == 1:
+            selected_model = list(downloadable_models.keys())[0]
+        else:
+            # Use simple text input for model selection
+            response = rumps.alert(
+                "Download Model",
+                "Available models:\n"
+                + "\n".join(f"• {opt}" for opt in options)
+                + "\n\nEnter model name to download:",
+                default_text="base",
+            )
+            if not response[1]:  # User cancelled
+                return
+            selected_model = response[1].strip().lower()
 
-        info_lines.append("\nPyTorch models are automatically downloaded and cached")
-        info_lines.append("when first selected for use.")
-        info_lines.append("Cache location: ~/.cache/whisper/")
+        if selected_model in downloadable_models:
+            self._download_model_with_progress(provider, selected_model)
+        else:
+            rumps.alert("Invalid Model", f"Model '{selected_model}' not found.")
 
-        rumps.alert("Model Management", "\n".join(info_lines))
+    def _show_model_selection_dialog(self, provider, available_models):
+        """Show model selection dialog for switching active model"""
+        if not available_models:
+            rumps.alert(
+                "Switch Model", "No models available. Please download a model first."
+            )
+            return
+
+        current_model = provider._model_name if provider._available else None
+
+        # Create selection options
+        model_list = []
+        for model in available_models:
+            marker = "→" if model == current_model else " "
+            model_list.append(f"{marker} {model}")
+
+        response = rumps.alert(
+            "Switch Active Model",
+            f"Current: {current_model or 'None'}\n\nAvailable models:\n"
+            + "\n".join(model_list)
+            + "\n\nEnter model name:",
+            default_text=current_model or available_models[0],
+        )
+
+        if response[1]:  # User entered a model name
+            new_model = response[1].strip().lower()
+            if new_model in available_models:
+                if provider.set_model(new_model):
+                    # Save preference
+                    self._update_whisper_model_preference(new_model)
+
+                    rumps.alert("Model Switched", f"Switched to model: {new_model}")
+                    # Update the current provider if it's active
+                    if isinstance(self.speech_provider, type(provider)):
+                        self.speech_provider = provider
+
+                    # Update menu if needed
+                    self._update_menu()
+                else:
+                    rumps.alert(
+                        "Switch Failed", f"Failed to switch to model: {new_model}"
+                    )
+            else:
+                rumps.alert("Invalid Model", f"Model '{new_model}' not available.")
+
+    def _download_model_with_progress(self, provider, model_name):
+        """Download model with progress indication"""
+        import threading
+
+        from download_whisper_models import MODELS
+
+        model_info = MODELS[model_name]
+
+        # Show download start notification
+        rumps.notification(
+            "Termina",
+            "Download Started",
+            f"Downloading {model_name} model ({model_info['size_mb']}MB)...",
+        )
+
+        def download_thread():
+            try:
+                success = provider.download_model(model_name)
+                if success:
+                    rumps.notification(
+                        "Termina",
+                        "Download Complete",
+                        f"Model {model_name} downloaded successfully!",
+                    )
+                    # Switch to the newly downloaded model
+                    if provider.set_model(model_name):
+                        # Save preference
+                        self._update_whisper_model_preference(model_name)
+
+                        rumps.notification(
+                            "Termina",
+                            "Model Activated",
+                            f"Switched to {model_name} model",
+                        )
+                else:
+                    rumps.notification(
+                        "Termina",
+                        "Download Failed",
+                        f"Failed to download {model_name} model",
+                    )
+            except Exception as e:
+                rumps.notification(
+                    "Termina",
+                    "Download Error",
+                    f"Error downloading {model_name}: {str(e)}",
+                )
+
+        # Run download in background thread
+        threading.Thread(target=download_thread, daemon=True).start()
+
+    def _load_config(self):
+        """Load configuration from JSON file"""
+        default_config = {
+            "preferred_whisper_model": "base",
+            "last_used_provider": "openai",
+        }
+
+        if self.config_file.exists():
+            try:
+                with open(self.config_file) as f:
+                    config = json.load(f)
+                # Merge with defaults to ensure all keys exist
+                default_config.update(config)
+                return default_config
+            except (OSError, json.JSONDecodeError) as e:
+                print(f"Error loading config: {e}, using defaults")
+
+        return default_config
+
+    def _save_config(self):
+        """Save configuration to JSON file"""
+        try:
+            with open(self.config_file, "w") as f:
+                json.dump(self.config, f, indent=2)
+        except OSError as e:
+            print(f"Error saving config: {e}")
+
+    def _update_whisper_model_preference(self, model_name):
+        """Update preferred whisper model in config"""
+        self.config["preferred_whisper_model"] = model_name
+        self._save_config()
+
+    def _apply_saved_preferences(self):
+        """Apply saved preferences to providers"""
+        from speech_providers import FFmpegWhisperProvider
+
+        # Apply preferred whisper.cpp model if available
+        preferred_model = self.config.get("preferred_whisper_model", "base")
+
+        if (
+            isinstance(self.speech_provider, FFmpegWhisperProvider)
+            and preferred_model in self.speech_provider.get_available_models()
+        ):
+            self.speech_provider.set_model(preferred_model)
+            print(f"Applied saved model preference: {preferred_model}")
 
     def _select_model(self, model_name):
         """Select a specific model size for local whisper"""
