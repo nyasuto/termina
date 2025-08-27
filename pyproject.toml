@@ -30,24 +30,19 @@ classifiers = [
 dependencies = [
     # Menu bar UI for macOS
     "rumps>=0.4.0",
-    
     # Audio recording
     "sounddevice>=0.4.6",
-    
-    # Audio file processing  
+    # Audio file processing
     "scipy>=1.11.0",
     "numpy>=1.21.0",
-    
     # OpenAI Whisper API client
     "openai>=1.0.0",
-    
     # Environment variable management
     "python-dotenv>=1.0.0",
-    
     # Global hotkey support
     "pynput>=1.7.6",
-    
-    "requests>=2.25.0",  # For model downloading
+    "requests>=2.25.0", # For model downloading
+    "pillow>=11.3.0",
 ]
 
 [tool.uv]
