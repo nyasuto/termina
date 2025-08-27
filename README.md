@@ -8,10 +8,9 @@ TerminaはPythonで作られたmacOSのメニューバー常駐アプリです�
 	•	メニューバーアイコンから音声コントロール
 	•	手動録音開始・停止（任意の長さで録音可能）
 	•	音声から変換されたテキストを現在のアクティブアプリにペースト
-	•	**3つの音声認識プロバイダー対応**：
+	•	**2つの音声認識プロバイダー対応**：
 	  - 🚀 **FFmpeg + Whisper.cpp**（超高速・完全ローカル・GPU対応）
 	  - 🌐 **OpenAI Whisper API**（高精度・クラウド）
-	  - 💻 **Local Whisper (PyTorch)**（オフライン・中程度）
 	•	グローバルホットキー対応（⌘+Shift+V で録音開始・停止）
 	•	高度な音声前処理（FFmpeg統合ノイズ除去）
 
@@ -87,12 +86,12 @@ echo "SPEECH_PROVIDER=openai" >> .env.local
 
 または手動で`.env.local`ファイルを作成し、以下の内容を記述：
 ```
-# OpenAI Whisper API (推奨)
+# OpenAI Whisper API
 OPENAI_API_KEY=your-openai-api-key-here
 SPEECH_PROVIDER=openai
 
-# またはローカルWhisper使用（オフライン, PyTorch）
-# SPEECH_PROVIDER=local
+# または FFmpeg + Whisper.cpp 使用（オフライン, 超高速）
+# SPEECH_PROVIDER=ffmpeg
 ```
 
 5. **アプリを実行**
@@ -100,23 +99,6 @@ SPEECH_PROVIDER=openai
 uv run python termina.py
 ```
 
-### ローカルWhisper（PyTorch, オフライン音声認識）の使用
-
-インターネット不要でプライバシーを重視する場合：
-
-1. **openai-whisperをインストール**
-```bash
-uv add openai-whisper
-```
-
-2. **設定ファイルを更新**（プロバイダキーを `local` に統一）
-```bash
-echo "SPEECH_PROVIDER=local" >> .env.local
-```
-
-3. **初回使用時にモデル自動ダウンロード**
-- 初回使用時に選択したモデルが自動ダウンロード
-- メニューバー > Speech Provider > Manage Local Models でモデル情報確認
 
 ### 初回実行時の設定
 
@@ -149,7 +131,6 @@ echo "SPEECH_PROVIDER=local" >> .env.local
 |-------------|------|------|---------|----------|--------|----------|
 | 🚀 **FFmpeg + Whisper.cpp** | **最高** | **超高速** | ✅ Metal | ✅ | **無料** | **日常使用・高頻度** |
 | 🌐 **OpenAI API** | 最高 | 高速 | - | ❌ | 従量課金 | たまに使用・最高精度 |
-| 💻 **Local Whisper (PyTorch)** | 高い | 中速 | ❌ | ✅ | 無料 | 学習・実験用 |
 
 #### 🚀 Whisper.cpp モデル管理
 
@@ -175,17 +156,6 @@ python download_whisper_models.py download-all
 | **medium** | 1.5GB | ★★★★ | やや遅い | 遅い | 精度重視 |
 | **large-v3** | 2.9GB | ★★★★★ | 遅い | 最遅 | 最高精度 |
 
-#### 💻 PyTorch Whisper モデル（自動ダウンロード）
-
-メニューバー > Speech Provider > PyTorch Model Size から選択：
-
-| モデル | サイズ | 精度 | 速度 | 推奨用途 |
-|--------|--------|------|------|----------|
-| tiny | 39MB | 低い | 最高速 | テスト・実験 |
-| base | 142MB | 普通 | 高速 | バランス |
-| small | 466MB | 良い | 普通 | 一般用途 |
-| medium | 1.5GB | 高い | やや遅い | 精度重視 |
-| large | 3.1GB | 最高 | 遅い | 最高精度 |
 
 ### トラブルシューティング
 
